@@ -1,0 +1,189 @@
+
+.warranty-page {
+  max-width: 720px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
+
+.warranty-page h1 {
+  font-size: 1.75rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.warranty-section {
+  margin-bottom: 1.75rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.warranty-section:last-of-type {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+.warranty-section h2 {
+  font-size: 1.2rem;
+  margin-bottom: 0.75rem;
+}
+
+.warranty-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.warranty-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.warranty-field label {
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.warranty-input,
+.warranty-select {
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  font-size: 0.95rem;
+  background-color:rgba(23,23,23,0.2);
+  color:#232323;
+
+}
+
+.warranty-input:focus,
+.warranty-select:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px #2563eb33;
+}
+
+.warranty-actions {
+  margin-top: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.warranty-button {
+  padding: 0.5rem 0.9rem;
+  border-radius: 50px;
+  padding: 0.65rem 1.2rem;
+  border: none;
+  background: #321414;
+  color: white;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.warranty-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.warranty-button.secondary {
+  background: #6b7280;
+}
+
+.warranty-status {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #fff;
+  padding: 0.75rem 1.25rem;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
+}
+
+.warranty-status--error {
+  color: #b91c1c;
+}
+
+.warranty-status--success {
+  color: #15803d;
+}
+
+
+/* Step Indicator */
+.step-indicator {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 2rem;
+  gap: 1rem;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #ccc;
+  position: relative;
+}
+
+.step::after {
+  content: '';
+  position: absolute;
+  top: 12px;
+  right: -30px;
+  width: 60px;
+  height: 2px;
+  background-color: #ccc;
+}
+
+.step:last-child::after {
+  display: none;
+}
+
+.step.active {
+  color: #0e0e0e;
+}
+
+.step.active::after {
+  background-color: #ec2027;
+  z-index: 0;
+}
+
+.step-number {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #f0f0f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  transform: translateZ(0);
+    z-index: 1;
+}
+
+.step.active .step-number {
+  background-color: #ec2027;
+  color: white;
+}
+
+.step-label {
+  font-size: 0.875rem;
+}
+
+/* Verification success message */
+.verification-success {
+  background-color: #d4edda;
+  color: #155724;
+  padding: 1rem;
+  border-radius: 4px;
+  border: 1px solid #c3e6cb;
+  margin-top: 1rem;
+}
