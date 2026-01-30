@@ -91,6 +91,9 @@ export default function WarrantyPage() {
       if (res.ok) {
         setStatus("Warranty submitted successfully.");
         setStatusType("success");
+        setTimeout(() => {
+        window.location.reload();
+      }, 3000);
       } else {
         setStatus(data.error || "Failed to submit warranty.");
         setStatusType("error");
