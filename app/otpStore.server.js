@@ -18,9 +18,12 @@ function getTransporter() {
       },
       
       tls: {
-        ciphers: 'SSLv3',
-        rejectUnauthorized: false
+        minVersion: 'TLSv1.2',
       },
+
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 10000,
     });
   }
   return transporter;
