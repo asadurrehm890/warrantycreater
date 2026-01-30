@@ -97,9 +97,6 @@
 .warranty-status {
   margin-top: 1rem;
   font-size: 0.9rem;
-  position: fixed;
-  top: 1rem;
-  left: 50%;
   transform: translateX(-50%);
   background-color: #fff;
   padding: 0.75rem 1.25rem;
