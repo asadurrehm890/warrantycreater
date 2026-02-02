@@ -100,7 +100,7 @@ export default function WarrantyPage() {
         setStatus("Warranty submitted successfully.");
         setStatusType("success");
         setTimeout(() => {
-          window.location.href("https://warrantycreater-production.up.railway.app/thankyou");
+          window.location.href="/thankyou";
         }, 1000);
       } else {
         setStatus(data.error || "Failed to submit warranty.");
