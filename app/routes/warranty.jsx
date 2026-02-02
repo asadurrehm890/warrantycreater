@@ -121,7 +121,7 @@ export default function WarrantyPage() {
             />
           </div>
             <div className="email-verification-section">
-          <form className="warranty-form" onSubmit={handleSendOtp}>
+         
             <div className="warranty-field">
               <label htmlFor="warranty-email">Email</label>
               <input
@@ -135,18 +135,14 @@ export default function WarrantyPage() {
               />
             </div>
             <div className="warranty-actions">
-              <button className="warranty-button" type="submit">
+              <button className="warranty-button" onClick={handleSendOtp}>
                 Request OTP
               </button>
             </div>
-          </form>
+        
 
           {otpToken && (
-            <form
-              className="warranty-form"
-              onSubmit={handleVerifyOtp}
-              style={{ marginTop: "0.75rem" }}
-            >
+           <>
               <div className="warranty-field">
                 <label htmlFor="warranty-otp">Enter OTP</label>
                 <input
@@ -160,11 +156,11 @@ export default function WarrantyPage() {
                 />
               </div>
               <div className="warranty-actions">
-                <button className="warranty-button secondary" type="submit">
+                <button className="warranty-button secondary" onClick={handleVerifyOtp}>
                   Verify OTP
                 </button>
               </div>
-            </form>
+           </>
           )}
 
           {emailVerified && (
