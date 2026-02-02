@@ -1,4 +1,3 @@
-
 import shopify from "../shopify.server";
 
 export async function action({ request }) {
@@ -25,7 +24,6 @@ export async function action({ request }) {
   const productName = String(body.product_name || "").trim();
   const serialNumber = String(body.serial_number || "").trim();
 
-
   if (
     !email ||
     !fullName ||
@@ -50,8 +48,8 @@ export async function action({ request }) {
   const firstName = nameParts[0] || "Customer";
   const lastName = nameParts.slice(1).join(" ") || "Customer";
 
-  
-  const shopDomain = "mobiteluk.myshopify.com"; 
+  // TODO: if you support multiple shops, don't hard-code this; derive from session
+  const shopDomain = "mobiteluk.myshopify.com";
 
   const sessions = await shopify.sessionStorage.findSessionsByShop(shopDomain);
   const session = sessions && sessions[0];
@@ -67,7 +65,7 @@ export async function action({ request }) {
     );
   }
 
-  
+  // 1) Find or create the Customer
   const customerResult = await findOrCreateCustomer(
     session,
     email,
@@ -90,7 +88,7 @@ export async function action({ request }) {
   }
   const customerId = customerResult.customerId;
 
-  
+  // 2) Create / upsert the warranty_activation_details metaobject
   const warrantyResult = await createWarrantyMetaobject(session, {
     customerEmail: email,
     productName,
@@ -108,6 +106,7 @@ export async function action({ request }) {
   }
   const warrantyMetaobjectId = warrantyResult.metaobjectId;
 
+  // 3) Link that metaobject to the customer via a customer metafield
   const metafieldResult = await setCustomerWarrantyMetafield(
     session,
     customerId,
@@ -126,8 +125,6 @@ export async function action({ request }) {
     headers: { "Content-Type": "application/json" },
   });
 }
-
-
 
 async function callAdminGraphQL(session, query, variables = {}) {
   const endpoint = `https://${session.shop}/admin/api/2024-07/graphql.json`;
@@ -175,8 +172,6 @@ async function callAdminGraphQL(session, query, variables = {}) {
   return { ok: true, data: json.data };
 }
 
-
-
 async function findOrCreateCustomer(
   session,
   email,
@@ -185,11 +180,11 @@ async function findOrCreateCustomer(
   phone,
   address
 ) {
-  
+  // 1) Try to find existing customer by email
   const searchQuery = `#graphql
     query FindCustomerByEmail($query: String!) {
       customers(first: 1, query: $query) {
-        nodes { id }    # avoid protected 'email' field
+        nodes { id }
       }
     }`;
 
@@ -211,7 +206,7 @@ async function findOrCreateCustomer(
     return { ok: true, customerId: existing.id };
   }
 
- 
+  // 2) If not found, create a new customer
   const createMutation = `#graphql
     mutation CreateCustomer(
       $email: String!,
@@ -239,7 +234,7 @@ async function findOrCreateCustomer(
     firstName,
     lastName,
     phone,
-    addresses: [address], 
+    addresses: [address],
   });
 
   if (!createRes.ok) {
@@ -272,79 +267,10 @@ async function findOrCreateCustomer(
   return { ok: true, customerId };
 }
 
-
-
-/*async function createWarrantyMetaobject(session, input) {
-  const mutation = `#graphql
-    mutation CreateWarrantyMetaobject(
-      $customerEmail: String!
-      $productName: String!
-      $purchaseSource: String!
-      $purchaseDate: String!
-      $orderNumber: String!
-      $serialNumber: String!
-    ) {
-      metaobjectCreate(
-        metaobject: {
-          type: "$app:warranty_registration"
-          fields: [
-            { key: "customer_email", value: $customerEmail }
-            { key: "product_name", value: $productName }
-            { key: "purchase_source", value: $purchaseSource }
-            { key: "purchase_date", value: $purchaseDate }
-            { key: "order_number", value: $orderNumber }
-            { key: "serial_number", value: $serialNumber }
-            { key: "status", value: "Pending" }
-          ]
-        }
-      ) {
-        metaobject { id }
-        userErrors { field message }
-      }
-    }`;
-
-  const res = await callAdminGraphQL(session, mutation, {
-    customerEmail: input.customerEmail,
-    productName: input.productName,
-    purchaseSource: input.purchaseSource,
-    purchaseDate: input.purchaseDate,
-    orderNumber: input.orderNumber,
-    serialNumber: input.serialNumber,
-  });
-
-  if (!res.ok) {
-    return { ok: false, error: `metaobjectCreate failed: ${res.error}` };
-  }
-
-  const userErrors =
-    res.data &&
-    res.data.metaobjectCreate &&
-    res.data.metaobjectCreate.userErrors;
-
-  if (userErrors && userErrors.length > 0) {
-    console.error("metaobjectCreate userErrors", userErrors);
-    return {
-      ok: false,
-      error: `metaobjectCreate errors: ${JSON.stringify(userErrors)}`,
-    };
-  }
-
-  const metaobjectId =
-    res.data &&
-    res.data.metaobjectCreate &&
-    res.data.metaobjectCreate.metaobject &&
-    res.data.metaobjectCreate.metaobject.id;
-
-  if (!metaobjectId) {
-    return { ok: false, error: "metaobjectCreate returned no metaobject id" };
-  }
-
-  return { ok: true, metaobjectId };
-}*/
-
+// Create / upsert merchant-owned metaobject: warranty_activation_details
 async function createWarrantyMetaobject(session, input) {
-  // Build a stable handle for this warranty record
-  // e.g. "warranty-1001-SN-ABC-123"
+  // Build a stable handle for this warranty record, so repeated submissions
+  // for the same order+serial update instead of duplicating.
   const warrantyHandle = `warranty-${input.orderNumber}-${input.serialNumber}`
     .toLowerCase()
     .replace(/[^a-z0-9\-]/g, "-");
@@ -363,13 +289,13 @@ async function createWarrantyMetaobject(session, input) {
         handle: $handle
         metaobject: {
           fields: [
-            { key: "product_name",               value: $productName }
-            { key: "customer_email",             value: $customerEmail }
-            { key: "product_purchase_source",    value: $purchaseSource }
-            { key: "product_purchase_date",      value: $purchaseDate }
+            { key: "product_name",                 value: $productName }
+            { key: "customer_email",               value: $customerEmail }
+            { key: "product_purchase_source",      value: $purchaseSource }
+            { key: "product_purchase_date",        value: $purchaseDate }
             { key: "product_order_invoice_number", value: $orderNumber }
-            { key: "product_serial_number",      value: $serialNumber }
-            { key: "status",                     value: "Pending" }
+            { key: "product_serial_number",        value: $serialNumber }
+            { key: "status",                       value: "Pending" }
           ]
         }
       ) {
@@ -421,6 +347,7 @@ async function createWarrantyMetaobject(session, input) {
   return { ok: true, metaobjectId };
 }
 
+// Link the warranty_activation_details metaobject to the Customer via a metafield
 async function setCustomerWarrantyMetafield(
   session,
   customerId,
@@ -435,9 +362,10 @@ async function setCustomerWarrantyMetafield(
         metafields: [
           {
             ownerId: $customerId
-            key: "warranty_registration"
+            namespace: "custom"                     # MUST match your Admin metafield definition
+            key: "warranty_activation_details"      # MUST match your Admin metafield definition
             type: "metaobject_reference"
-            value: $warrantyId
+            value: $warrantyId                      # metaobject GID from metaobjectUpsert
           }
         ]
       ) {
@@ -448,7 +376,6 @@ async function setCustomerWarrantyMetafield(
 
   const res = await callAdminGraphQL(session, mutation, {
     customerId,
-   
     warrantyId: warrantyMetaobjectId,
   });
 
