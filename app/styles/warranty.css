@@ -179,3 +179,89 @@
 .postal-address-serach{
   grid-column: span 2;
 }
+
+
+/* Address Autocomplete Styles */
+.postal-address-search {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.address-autocomplete-container {
+  position: relative;
+}
+
+.address-suggestions-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  max-height: 250px;
+  overflow-y: auto;
+  margin-top: 4px;
+}
+
+.suggestion-item {
+  padding: 10px 15px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-size: 14px;
+  color: #333;
+}
+
+.suggestion-item:hover {
+  background-color: #f5f5f5;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-main {
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.suggestion-details {
+  font-size: 0.9em;
+  color: #666;
+  opacity: 0.8;
+}
+
+.suggestion-loading {
+  padding: 10px 15px;
+  color: #666;
+  font-style: italic;
+  text-align: center;
+  background-color: #f9f9f9;
+}
+
+/* Make sure the autocomplete dropdown appears above other elements */
+.warranty-form {
+  position: relative;
+}
+
+/* Update existing postal-address-search class if needed */
+.postal-address-search .warranty-field {
+  margin-bottom: 0;
+}
+
+.postal-address-search .warranty-actions {
+  margin-top: 10px;
+}
+
+/* Remove the "required" styling from search input if you want */
+.postal-address-search input[required] {
+  border-color: #ddd;
+}
+
+.postal-address-search input[required]:invalid {
+  box-shadow: none;
+}

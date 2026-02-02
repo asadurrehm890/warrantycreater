@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../styles/warranty.css"; 
 
 export default function WarrantyPage() {
@@ -8,8 +8,135 @@ export default function WarrantyPage() {
   const [otp, setOtp] = useState("");
   const [status, setStatus] = useState(null);
   const [statusType, setStatusType] = useState(null);
-  const [otpSent, setOtpSent] = useState(false); // New state to track OTP sent status
+  const [otpSent, setOtpSent] = useState(false);
+  
+  // Address states
+  const [addressSearch, setAddressSearch] = useState("");
+  const [addressSuggestions, setAddressSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const [addressFields, setAddressFields] = useState({
+    street: "",
+    town: "",
+    country: "",
+    postal_code: ""
+  });
 
+  // Debounce address search
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (addressSearch.trim().length > 2) {
+        searchAddresses(addressSearch);
+      }
+    }, 500); // Wait 500ms after user stops typing
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [addressSearch]);
+
+  // Search addresses using OpenStreetMap Nominatim API (FREE)
+  const searchAddresses = async (query) => {
+    setIsSearching(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5`,
+        {
+          headers: {
+            'Accept-Language': 'en',
+            'User-Agent': 'YourAppName/1.0 (your@email.com)' // Required by Nominatim
+          }
+        }
+      );
+      
+      const data = await response.json();
+      
+      if (data && data.length > 0) {
+        setAddressSuggestions(data);
+        setShowSuggestions(true);
+      } else {
+        setAddressSuggestions([]);
+        setShowSuggestions(false);
+      }
+    } catch (err) {
+      console.error("Address search error:", err);
+      setAddressSuggestions([]);
+      setShowSuggestions(false);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Handle address selection
+  const handleSelectAddress = (suggestion) => {
+    const address = suggestion.address;
+    
+    // Extract address components from OpenStreetMap response
+    let street = "";
+    let town = "";
+    let country = "";
+    let postalCode = "";
+
+    // Build street address
+    if (address.road) {
+      street = address.road;
+      if (address.house_number) {
+        street += ` ${address.house_number}`;
+      }
+    } else if (address.pedestrian) {
+      street = address.pedestrian;
+    }
+
+    // Get town/city (prioritize in this order)
+    town = address.city || 
+           address.town || 
+           address.village || 
+           address.municipality || 
+           address.county || 
+           "";
+
+    // Get country
+    country = address.country || "";
+
+    // Get postal code
+    postalCode = address.postcode || "";
+
+    // Update address fields
+    setAddressFields({
+      street: street || "",
+      town: town || "",
+      country: country || "",
+      postal_code: postalCode || ""
+    });
+
+    // Clear search and suggestions
+    setAddressSearch("");
+    setAddressSuggestions([]);
+    setShowSuggestions(false);
+    
+    setStatus("Address selected and auto-filled!");
+    setStatusType("success");
+  };
+
+  // Handle manual changes to address fields
+  const handleAddressFieldChange = (field, value) => {
+    setAddressFields(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest('.postal-address-search')) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  // Your existing functions (unchanged)
   async function handleSendOtp(e) {
     e.preventDefault();
     setStatusType(null);
@@ -23,7 +150,7 @@ export default function WarrantyPage() {
       const data = await res.json();
       if (res.ok) {
         setOtpToken(data.token);
-        setOtpSent(true); // Hide email input and show OTP input
+        setOtpSent(true);
         setStatus("OTP sent. Check your email.");
         setStatusType("success");
       } else {
@@ -52,7 +179,7 @@ export default function WarrantyPage() {
         setEmailVerified(true);
         setStatus("Email verified.");
         setStatusType("success");
-        setOtpSent(false); // Hide OTP fields after successful verification
+        setOtpSent(false);
       } else {
         setStatus(data.error || "Invalid OTP.");
         setStatusType("error");
@@ -64,7 +191,6 @@ export default function WarrantyPage() {
     }
   }
 
-  // Function to reset email verification process
   function handleEditEmail() {
     setEmailVerified(false);
     setOtpSent(false);
@@ -86,6 +212,9 @@ export default function WarrantyPage() {
     const body = Object.fromEntries(formData.entries());
     body.email = email;
     body.otpToken = otpToken;
+
+    // Add address fields to the submission
+    Object.assign(body, addressFields);
 
     setStatusType(null);
     setStatus("Submitting warranty...");
@@ -136,7 +265,6 @@ export default function WarrantyPage() {
           <div className="email-verification-section">
             {!emailVerified && (
               <>
-                {/* Show email input and request OTP button only when OTP not sent */}
                 {!otpSent ? (
                   <>
                     <div className="warranty-field">
@@ -164,7 +292,6 @@ export default function WarrantyPage() {
                   </>
                 ) : (
                   <>
-                    {/* Show OTP input and verify button when OTP is sent */}
                     <div className="warranty-field">
                       <label htmlFor="warranty-otp">Enter OTP</label>
                       <input
@@ -186,7 +313,6 @@ export default function WarrantyPage() {
                       >
                         Verify OTP
                       </button>
-                     
                     </div>
                   </>
                 )}
@@ -207,7 +333,6 @@ export default function WarrantyPage() {
             )}
           </div>
           
-          {/* Rest of your form fields remain the same */}
           <div className="warranty-field">
             <label htmlFor="phone">Phone Number</label>
             <input
@@ -219,31 +344,63 @@ export default function WarrantyPage() {
               required
             />
           </div>
-<div className="postal-address-serach">
+
+          {/* Address Search with Autocomplete */}
+          <div className="postal-address-search">
             <div className="warranty-field">
-                <label htmlFor="phone">Search Post Code</label>
+              <label htmlFor="search_address">Search Address</label>
+              <div className="address-autocomplete-container">
                 <input
-                id="Postal Code"
-                className="warranty-input"
-                type="text"
-                name="search_post_code"
-                placeholder="Type your postal code to search address"
-                required
+                  id="search_address"
+                  className="warranty-input"
+                  type="text"
+                  value={addressSearch}
+                  onChange={(e) => setAddressSearch(e.target.value)}
+                  placeholder="Type your address to search (start typing...) or click Find Address"
+                  name="search_address"
                 />
-            </div>
-            <div className="warranty-actions otp-actions">
-                      <button 
-                        className="warranty-button secondary" 
-                        
-                       
+                
+                {/* Suggestions Dropdown */}
+                {showSuggestions && addressSuggestions.length > 0 && (
+                  <div className="address-suggestions-dropdown">
+                    {isSearching && <div className="suggestion-loading">Searching...</div>}
+                    
+                    {addressSuggestions.map((suggestion, index) => (
+                      <div
+                        key={index}
+                        className="suggestion-item"
+                        onClick={() => handleSelectAddress(suggestion)}
                       >
-                        Find Address
-                      </button>
-                     
-                    </div>
+                        <div className="suggestion-main">
+                          {suggestion.display_name.split(',').slice(0, 2).join(',')}
+                        </div>
+                        <div className="suggestion-details">
+                          {suggestion.display_name.split(',').slice(2, 4).join(',')}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            <div className="warranty-actions otp-actions">
+              <button 
+                className="warranty-button secondary" 
+                type="button"
+                onClick={() => {
+                  if (addressSearch.trim()) {
+                    searchAddresses(addressSearch);
+                  }
+                }}
+                disabled={!addressSearch.trim()}
+              >
+                {isSearching ? "Searching..." : "Find Address"}
+              </button>
+            </div>
+          </div>
 
-                    </div>
-
+          {/* Address Fields - Auto-filled from search */}
           <div className="warranty-field">
             <label htmlFor="street">Street Address</label>
             <input
@@ -253,8 +410,11 @@ export default function WarrantyPage() {
               name="street"
               placeholder="Enter Street Address"
               required
+              value={addressFields.street}
+              onChange={(e) => handleAddressFieldChange('street', e.target.value)}
             />
           </div>
+          
           <div className="warranty-field">
             <label htmlFor="town">Town / City</label>
             <input
@@ -264,8 +424,11 @@ export default function WarrantyPage() {
               name="town"
               placeholder="Enter Town / City"
               required
+              value={addressFields.town}
+              onChange={(e) => handleAddressFieldChange('town', e.target.value)}
             />
           </div>
+          
           <div className="warranty-field">
             <label htmlFor="country">Country</label>
             <input
@@ -275,8 +438,11 @@ export default function WarrantyPage() {
               name="country"
               placeholder="Enter Country"
               required
+              value={addressFields.country}
+              onChange={(e) => handleAddressFieldChange('country', e.target.value)}
             />
           </div>
+          
           <div className="warranty-field">
             <label htmlFor="postal_code">Postal Code</label>
             <input
@@ -286,6 +452,8 @@ export default function WarrantyPage() {
               name="postal_code"
               placeholder="Enter Postal Code"
               required
+              value={addressFields.postal_code}
+              onChange={(e) => handleAddressFieldChange('postal_code', e.target.value)}
             />
           </div>
 
@@ -349,7 +517,7 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="text"
               name="serial_number"
-                placeholder="Enter Product Serial Number"
+              placeholder="Enter Product Serial Number"
               required
             />
           </div>
@@ -362,27 +530,24 @@ export default function WarrantyPage() {
             >
               Submit Warranty
             </button>
-
-            
           </div>
         </form>
+        
         {status && (
-        <p
-          className={
-            "warranty-status " +
-            (statusType === "error"
-              ? "warranty-status--error"
-              : statusType === "success"
-              ? "warranty-status--success"
-              : "")
-          }
-        >
-          {status}
-        </p>
-      )}
+          <p
+            className={
+              "warranty-status " +
+              (statusType === "error"
+                ? "warranty-status--error"
+                : statusType === "success"
+                ? "warranty-status--success"
+                : "")
+            }
+          >
+            {status}
+          </p>
+        )}
       </section>
-
-      
     </main>
   );
 }
