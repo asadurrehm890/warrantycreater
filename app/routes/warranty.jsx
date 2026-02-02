@@ -128,6 +128,7 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="text"
               name="full_name"
+              placeholder="Enter your full name"
               required
             />
           </div>
@@ -145,6 +146,7 @@ export default function WarrantyPage() {
                         className="warranty-input"
                         type="email"
                         name="customer_email"
+                        placeholder="Enter Email Address"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -213,6 +215,7 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="tel"
               name="phone"
+              placeholder="Enter your phone number"
               required
             />
           </div>
@@ -223,6 +226,7 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="text"
               name="street"
+              placeholder="Enter Street Address"
               required
             />
           </div>
@@ -233,6 +237,7 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="text"
               name="town"
+              placeholder="Enter Town / City"
               required
             />
           </div>
@@ -243,6 +248,7 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="text"
               name="country"
+              placeholder="Enter Country"
               required
             />
           </div>
@@ -253,6 +259,7 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="text"
               name="postal_code"
+              placeholder="Enter Postal Code"
               required
             />
           </div>
@@ -281,6 +288,7 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="date"
               name="purchase_date"
+              placeholder="Enter Purchase Date"
               required
             />
           </div>
@@ -292,6 +300,7 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="text"
               name="order_number"
+              placeholder="Enter Order / Invoice Number"
               required
             />
           </div>
@@ -303,6 +312,7 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="text"
               name="product_name"
+              placeholder="Enter Product Name"
               required
             />
           </div>
@@ -314,6 +324,7 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="text"
               name="serial_number"
+                placeholder="Enter Product Serial Number"
               required
             />
           </div>
