@@ -327,7 +327,10 @@ export default function WarrantyPage() {
               Submit Warranty
             </button>
 
-            {status && (
+            
+          </div>
+        </form>
+        {status && (
         <p
           className={
             "warranty-status " +
@@ -341,8 +344,6 @@ export default function WarrantyPage() {
           {status}
         </p>
       )}
-          </div>
-        </form>
       </section>
 
       
