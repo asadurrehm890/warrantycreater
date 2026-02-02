@@ -1,403 +1,124 @@
-.warranty-container {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 40px 20px;
-  font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
-  color: #333;
-  background: #f8f9fa;
-}
 
-.warranty-header {
-  text-align: center;
-  margin-bottom: 40px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.warranty-header h1 {
-  font-size: 32px;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin-bottom: 10px;
-}
-
-.warranty-subtitle {
-  font-size: 16px;
-  color: #666;
-  max-width: 600px;
-  margin: 0 auto;
-  line-height: 1.5;
-}
-
-.warranty-content {
-  display: flex;
-  flex-direction: column;
-  gap: 30px;
-}
-
-.warranty-card {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 20px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
-  transition: all 0.3s ease;
-}
-
-.card-header {
-  background: linear-gradient(135deg, #2c3e50, #4a6491);
-  color: white;
-  padding: 25px 30px;
-}
-
-.card-header h2 {
-  font-size: 22px;
-  font-weight: 600;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.step-number {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.card-description {
-  margin: 10px 0 0 44px;
-  font-size: 14px;
-  opacity: 0.9;
-  line-height: 1.5;
-}
-
-.card-body {
-  padding: 30px;
-}
-
-.form-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
-}
-
-.form-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-}
-
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.form-label {
-  font-weight: 600;
-  font-size: 14px;
-  color: #444;
-}
-
-.required {
-  color: #e74c3c;
-  margin-left: 2px;
-}
-
-.form-input,
-.form-select {
-  padding: 14px 16px;
-  border: 2px solid #e0e0e0;
+.warranty-page {
+  max-width: 720px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  background: #ffffff;
   border-radius: 8px;
-  font-size: 15px;
-  color: #333;
-  background: white;
-  transition: all 0.2s ease;
-  width: 100%;
-  box-sizing: border-box;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
 }
 
-.form-input:focus,
-.form-select:focus {
+.warranty-page h1 {
+  font-size: 1.75rem;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.warranty-section {
+  margin-bottom: 1.75rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.warranty-section:last-of-type {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
+.warranty-section h2 {
+  font-size: 1.2rem;
+  margin-bottom: 0.75rem;
+}
+
+.warranty-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.warranty-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.warranty-field label {
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.warranty-input,
+.warranty-select {
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  font-size: 0.95rem;
+  background-color:rgba(23,23,23,0.2);
+  color:#232323;
+
+}
+
+.warranty-input:focus,
+.warranty-select:focus {
   outline: none;
-  border-color: #3498db;
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px #2563eb33;
 }
 
-.form-input:disabled,
-.form-select:disabled {
-  background: #f5f5f5;
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-
-.form-input::placeholder {
-  color: #999;
-}
-
-.input-with-button {
+.warranty-actions {
+  margin-top: 0.5rem;
   display: flex;
-  gap: 12px;
-  align-items: flex-start;
+  gap: 0.5rem;
 }
 
-.input-with-button .form-input {
-  flex: 1;
-}
-
-.field-hint {
-  font-size: 13px;
-  color: #777;
-  margin-top: 4px;
-  line-height: 1.4;
-}
-
-.form-button {
-  padding: 14px 28px;
+.warranty-button {
+  padding: 0.5rem 0.9rem;
+  border-radius: 50px;
+  padding: 0.65rem 1.2rem;
   border: none;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 15px;
+  background: #321414;
+  color: white;
+  font-size: 0.95rem;
   cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.form-button.primary {
-  background: linear-gradient(135deg, #3498db, #2980b9);
-  color: white;
-}
-
-.form-button.primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #2980b9, #2573a7);
-  transform: translateY(-1px);
-}
-
-.form-button.secondary {
-  background: #95a5a6;
-  color: white;
-}
-
-.form-button.secondary:hover:not(:disabled) {
-  background: #7f8c8d;
-}
-
-.form-button:disabled {
+.warranty-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
+.warranty-button.secondary {
+  background: #6b7280;
+}
+
+.warranty-status {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  transform: translateX(-50%);
+  background-color: #fff;
+  padding: 0.75rem 1.25rem;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.1);
+}
+
+.warranty-status--error {
+  color: #b91c1c;
+}
+
+.warranty-status--success {
+  color: #15803d;
+}
+
+
+
+/* Verification success message */
 .verification-success {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 25px;
-  background: linear-gradient(135deg, #27ae60, #219653);
-  border-radius: 8px;
-  color: white;
-}
-
-.success-icon {
-  width: 50px;
-  height: 50px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  font-weight: bold;
-}
-
-.success-content h3 {
-  margin: 0 0 8px 0;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.success-content p {
-  margin: 0;
-  font-size: 14px;
-  opacity: 0.9;
-  line-height: 1.5;
-}
-
-.section-divider {
-  margin: 30px 0;
-  padding: 20px 0;
-  border-top: 2px solid #f0f0f0;
-  border-bottom: 2px solid #f0f0f0;
-}
-
-.section-divider h3 {
-  font-size: 18px;
-  color: #2c3e50;
-  margin: 0;
-  font-weight: 600;
-}
-
-.form-actions {
-  margin-top: 30px;
-  text-align: center;
-}
-
-.submit-button {
-  padding: 16px 40px;
-  background: linear-gradient(135deg, #27ae60, #219653);
-  color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  min-width: 250px;
-}
-
-.submit-button:hover:not(:disabled) {
-  background: linear-gradient(135deg, #219653, #1e8449);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(33, 150, 83, 0.3);
-}
-
-.submit-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none !important;
-}
-
-.form-note {
-  margin-top: 15px;
-  font-size: 13px;
-  color: #777;
-  line-height: 1.5;
-}
-
-.form-note a {
-  color: #3498db;
-  text-decoration: none;
-}
-
-.form-note a:hover {
-  text-decoration: underline;
-}
-
-.status-message {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  padding: 20px 25px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  min-width: 300px;
-  max-width: 400px;
-  animation: slideIn 0.3s ease;
-  z-index: 1000;
-  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15);
-}
-
-.status-message.success {
-  background: linear-gradient(135deg, #27ae60, #219653);
-  color: white;
-}
-
-.status-message.error {
-  background: linear-gradient(135deg, #e74c3c, #c0392b);
-  color: white;
-}
-
-.status-icon {
-  font-size: 20px;
-  font-weight: bold;
-  flex-shrink: 0;
-}
-
-.status-content {
-  flex: 1;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.status-content strong {
-  display: block;
-  margin-bottom: 3px;
-  font-size: 15px;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .warranty-container {
-    padding: 20px 15px;
-  }
-  
-  .warranty-header h1 {
-    font-size: 24px;
-  }
-  
-  .card-header {
-    padding: 20px;
-  }
-  
-  .card-header h2 {
-    font-size: 18px;
-  }
-  
-  .card-body {
-    padding: 20px;
-  }
-  
-  .form-row {
-    grid-template-columns: 1fr;
-    gap: 15px;
-  }
-  
-  .input-with-button {
-    flex-direction: column;
-  }
-  
-  .input-with-button .form-button {
-    width: 100%;
-  }
-  
-  .verification-success {
-    flex-direction: column;
-    text-align: center;
-    gap: 15px;
-  }
-  
-  .status-message {
-    left: 20px;
-    right: 20px;
-    bottom: 20px;
-    min-width: auto;
-    max-width: none;
-  }
-  
-  .submit-button {
-    width: 100%;
-    min-width: auto;
-  }
+  background-color: #d4edda;
+  color: #155724;
+  padding: 1rem;
+  border-radius: 4px;
+  border: 1px solid #c3e6cb;
+  margin-top: 1rem;
 }
