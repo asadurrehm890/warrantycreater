@@ -274,7 +274,7 @@ async function findOrCreateCustomer(
 
 
 
-async function createWarrantyMetaobject(session, input) {
+/*async function createWarrantyMetaobject(session, input) {
   const mutation = `#graphql
     mutation CreateWarrantyMetaobject(
       $customerEmail: String!
@@ -340,9 +340,86 @@ async function createWarrantyMetaobject(session, input) {
   }
 
   return { ok: true, metaobjectId };
+}*/
+
+async function createWarrantyMetaobject(session, input) {
+  // Build a stable handle for this warranty record
+  // e.g. "warranty-1001-SN-ABC-123"
+  const warrantyHandle = `warranty-${input.orderNumber}-${input.serialNumber}`
+    .toLowerCase()
+    .replace(/[^a-z0-9\-]/g, "-");
+
+  const mutation = `#graphql
+    mutation CreateWarrantyActivationDetails(
+      $handle: MetaobjectHandleInput!
+      $customerEmail: String!
+      $productName: String!
+      $purchaseSource: String!
+      $purchaseDate: String!
+      $orderNumber: String!
+      $serialNumber: String!
+    ) {
+      metaobjectUpsert(
+        handle: $handle
+        metaobject: {
+          fields: [
+            { key: "product_name",               value: $productName }
+            { key: "customer_email",             value: $customerEmail }
+            { key: "product_purchase_source",    value: $purchaseSource }
+            { key: "product_purchase_date",      value: $purchaseDate }
+            { key: "product_order_invoice_number", value: $orderNumber }
+            { key: "product_serial_number",      value: $serialNumber }
+            { key: "status",                     value: "Pending" }
+          ]
+        }
+      ) {
+        metaobject { id }
+        userErrors { field message }
+      }
+    }`;
+
+  const res = await callAdminGraphQL(session, mutation, {
+    handle: {
+      type: "warranty_activation_details", // merchant-owned type created in Admin
+      handle: warrantyHandle,
+    },
+    customerEmail: input.customerEmail,
+    productName: input.productName,
+    purchaseSource: input.purchaseSource,
+    purchaseDate: input.purchaseDate,
+    orderNumber: input.orderNumber,
+    serialNumber: input.serialNumber,
+  });
+
+  if (!res.ok) {
+    return { ok: false, error: `metaobjectUpsert failed: ${res.error}` };
+  }
+
+  const userErrors =
+    res.data &&
+    res.data.metaobjectUpsert &&
+    res.data.metaobjectUpsert.userErrors;
+
+  if (userErrors && userErrors.length > 0) {
+    console.error("metaobjectUpsert userErrors", userErrors);
+    return {
+      ok: false,
+      error: `metaobjectUpsert errors: ${JSON.stringify(userErrors)}`,
+    };
+  }
+
+  const metaobjectId =
+    res.data &&
+    res.data.metaobjectUpsert &&
+    res.data.metaobjectUpsert.metaobject &&
+    res.data.metaobjectUpsert.metaobject.id;
+
+  if (!metaobjectId) {
+    return { ok: false, error: "metaobjectUpsert returned no metaobject id" };
+  }
+
+  return { ok: true, metaobjectId };
 }
-
-
 
 async function setCustomerWarrantyMetafield(
   session,
