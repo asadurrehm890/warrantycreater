@@ -265,3 +265,7 @@
 .postal-address-search input[required]:invalid {
   box-shadow: none;
 }
+
+.address-autocomplete-container input{
+  width:100%;
+}
