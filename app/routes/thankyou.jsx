@@ -1,3 +1,5 @@
+import "../styles/warranty.css"; 
+
 export default function ThankYouPage() {
     return (   
         <section className="thankyou-section">
