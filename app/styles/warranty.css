@@ -185,6 +185,7 @@
 .postal-address-search {
   position: relative;
   margin-bottom: 20px;
+  grid-column: span 2;
 }
 
 .address-autocomplete-container {
