@@ -257,7 +257,6 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="text"
               name="full_name"
-              placeholder="Enter your full name"
               required
             />
           </div>
@@ -274,7 +273,6 @@ export default function WarrantyPage() {
                         className="warranty-input"
                         type="email"
                         name="customer_email"
-                        placeholder="Enter Email Address"
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -302,7 +300,7 @@ export default function WarrantyPage() {
                         required
                         value={otp}
                         onChange={(e) => setOtp(e.target.value)}
-                        placeholder="Enter OTP sent to your email"
+                        
                       />
                     </div>
                     <div className="warranty-actions otp-actions">
@@ -340,7 +338,6 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="tel"
               name="phone"
-              placeholder="Enter your phone number"
               required
             />
           </div>
@@ -356,7 +353,6 @@ export default function WarrantyPage() {
                   type="text"
                   value={addressSearch}
                   onChange={(e) => setAddressSearch(e.target.value)}
-                  placeholder="Type your address to search (start typing...) or click Find Address"
                   name="search_address"
                 />
                 
@@ -408,7 +404,6 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="text"
               name="street"
-              placeholder="Enter Street Address"
               required
               value={addressFields.street}
               onChange={(e) => handleAddressFieldChange('street', e.target.value)}
@@ -422,7 +417,6 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="text"
               name="town"
-              placeholder="Enter Town / City"
               required
               value={addressFields.town}
               onChange={(e) => handleAddressFieldChange('town', e.target.value)}
@@ -436,7 +430,6 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="text"
               name="country"
-              placeholder="Enter Country"
               required
               value={addressFields.country}
               onChange={(e) => handleAddressFieldChange('country', e.target.value)}
@@ -450,7 +443,6 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="text"
               name="postal_code"
-              placeholder="Enter Postal Code"
               required
               value={addressFields.postal_code}
               onChange={(e) => handleAddressFieldChange('postal_code', e.target.value)}
@@ -482,7 +474,6 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="date"
               name="purchase_date"
-              placeholder="Enter Purchase Date"
               required
             />
           </div>
@@ -494,7 +485,6 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="text"
               name="order_number"
-              placeholder="Enter Order / Invoice Number"
               required
             />
           </div>
@@ -506,7 +496,6 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="text"
               name="product_name"
-              placeholder="Enter Product Name"
               required
             />
           </div>
@@ -518,7 +507,6 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="text"
               name="serial_number"
-              placeholder="Enter Product Serial Number"
               required
             />
           </div>
