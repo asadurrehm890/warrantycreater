@@ -81,16 +81,6 @@ type = "single_line_text_field"
 required = false
 
 
-[metaobjects.app.warranty_registration.fields.approval_status]
-name = "Approval Status"
-type = "single_line_text_field"
-required = true
-
-[[metaobjects.app.warranty_registration.fields.approval_status.validations]]
-name = "choices"
-value = "[\"Approved\", \"Pending\", \"Rejected\", \"In Process\"]"
-
-
 [customer.metafields.app.warranty_registration]
 type = "metaobject_reference<$app:warranty_registration>"
 name = "Warranty Registration"
