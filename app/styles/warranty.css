@@ -79,13 +79,12 @@
 
 .warranty-input,
 .warranty-select {
-  padding: 0.75rem 1rem;
+  padding: .85rem 1rem;
   border-radius: 4px;
-  border: 1px solid #d1d5db;
-  font-size: 0.95rem;
-  background-color:rgba(23,23,23,0.2);
-  color:#232323;
-
+  border: 1px solid #1717170d;
+  font-size: .95rem;
+  background-color: #1717170d;
+  color: #232323;
 }
 
 .warranty-input:focus,
