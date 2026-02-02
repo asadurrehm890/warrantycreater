@@ -245,7 +245,7 @@ export default function WarrantyPage() {
   return (
     <main className="warranty-page">
       <h1>Warranty Activation</h1>
-      <p>Please provide your personal and order details to activate your product warranty.</p>
+      <p className="paragraph">Please provide your personal and order details to activate your product warranty.</p>
       {/* Customer Information Section */}
       <section className="warranty-section">
         <h2>Personal Information</h2>
