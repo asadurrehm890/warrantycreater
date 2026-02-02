@@ -150,7 +150,7 @@ export default function WarrantyPage() {
                         onChange={(e) => setEmail(e.target.value)}
                       />
                     </div>
-                    <div className="warranty-actions">
+                    <div className="warranty-actions otp-actions">
                       <button 
                         className="warranty-button" 
                         onClick={handleSendOtp}

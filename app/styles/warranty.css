@@ -148,3 +148,15 @@
   align-items: center;
   gap: 10px;
 }
+
+.email-verification-section{
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.otp-actions{
+    border-radius: 5px;
+    padding: 0.5rem;
+    height: 45px;
+}
