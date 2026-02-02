@@ -100,8 +100,8 @@ export default function WarrantyPage() {
         setStatus("Warranty submitted successfully.");
         setStatusType("success");
         setTimeout(() => {
-          window.location.reload();
-        }, 3000);
+          window.location.href("/thankyou");
+        }, 1000);
       } else {
         setStatus(data.error || "Failed to submit warranty.");
         setStatusType("error");
@@ -326,11 +326,8 @@ export default function WarrantyPage() {
             >
               Submit Warranty
             </button>
-          </div>
-        </form>
-      </section>
 
-      {status && (
+            {status && (
         <p
           className={
             "warranty-status " +
@@ -344,6 +341,11 @@ export default function WarrantyPage() {
           {status}
         </p>
       )}
+          </div>
+        </form>
+      </section>
+
+      
     </main>
   );
 }
