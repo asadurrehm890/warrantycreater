@@ -219,6 +219,31 @@ export default function WarrantyPage() {
               required
             />
           </div>
+<div className="postal-address-serach">
+            <div className="warranty-field">
+                <label htmlFor="phone">Search Post Code</label>
+                <input
+                id="Postal Code"
+                className="warranty-input"
+                type="text"
+                name="search_post_code"
+                placeholder="Type your postal code to search address"
+                required
+                />
+            </div>
+            <div className="warranty-actions otp-actions">
+                      <button 
+                        className="warranty-button secondary" 
+                        
+                       
+                      >
+                        Find Address
+                      </button>
+                     
+                    </div>
+
+                    </div>
+
           <div className="warranty-field">
             <label htmlFor="street">Street Address</label>
             <input
