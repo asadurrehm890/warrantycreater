@@ -7,7 +7,8 @@ export default function WarrantyPage() {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [status, setStatus] = useState(null);
-  const [statusType, setStatusType] = useState(null); 
+  const [statusType, setStatusType] = useState(null);
+  const [otpSent, setOtpSent] = useState(false); // New state to track OTP sent status
 
   async function handleSendOtp(e) {
     e.preventDefault();
@@ -22,6 +23,7 @@ export default function WarrantyPage() {
       const data = await res.json();
       if (res.ok) {
         setOtpToken(data.token);
+        setOtpSent(true); // Hide email input and show OTP input
         setStatus("OTP sent. Check your email.");
         setStatusType("success");
       } else {
@@ -50,6 +52,7 @@ export default function WarrantyPage() {
         setEmailVerified(true);
         setStatus("Email verified.");
         setStatusType("success");
+        setOtpSent(false); // Hide OTP fields after successful verification
       } else {
         setStatus(data.error || "Invalid OTP.");
         setStatusType("error");
@@ -59,6 +62,16 @@ export default function WarrantyPage() {
       setStatus("Failed to verify OTP.");
       setStatusType("error");
     }
+  }
+
+  // Function to reset email verification process
+  function handleEditEmail() {
+    setEmailVerified(false);
+    setOtpSent(false);
+    setOtpToken(null);
+    setOtp("");
+    setStatus(null);
+    setStatusType(null);
   }
 
   async function handleSubmit(e) {
@@ -104,8 +117,6 @@ export default function WarrantyPage() {
     <main className="warranty-page">
       <h1>Warranty Activation / Product Query</h1>
 
- 
-
       {/* Customer Information Section */}
       <section className="warranty-section">
         <h2>Personal Information</h2>
@@ -120,55 +131,87 @@ export default function WarrantyPage() {
               required
             />
           </div>
-            <div className="email-verification-section">
-         
-            <div className="warranty-field">
-              <label htmlFor="warranty-email">Email</label>
-              <input
-                id="warranty-email"
-                className="warranty-input"
-                type="email"
-                name="customer_email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div className="warranty-actions">
-              <button className="warranty-button" onClick={handleSendOtp}>
-                Request OTP
-              </button>
-            </div>
-        
+          
+          <div className="email-verification-section">
+            {!emailVerified && (
+              <>
+                {/* Show email input and request OTP button only when OTP not sent */}
+                {!otpSent ? (
+                  <>
+                    <div className="warranty-field">
+                      <label htmlFor="warranty-email">Email</label>
+                      <input
+                        id="warranty-email"
+                        className="warranty-input"
+                        type="email"
+                        name="customer_email"
+                        required
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
+                    </div>
+                    <div className="warranty-actions">
+                      <button 
+                        className="warranty-button" 
+                        onClick={handleSendOtp}
+                        disabled={!email.trim()}
+                      >
+                        Request OTP
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Show OTP input and verify button when OTP is sent */}
+                    <div className="warranty-field">
+                      <label htmlFor="warranty-otp">Enter OTP</label>
+                      <input
+                        id="warranty-otp"
+                        className="warranty-input"
+                        type="text"
+                        name="otp"
+                        required
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value)}
+                        placeholder="Enter OTP sent to your email"
+                      />
+                    </div>
+                    <div className="warranty-actions otp-actions">
+                      <button 
+                        className="warranty-button secondary" 
+                        onClick={handleVerifyOtp}
+                        disabled={!otp.trim()}
+                      >
+                        Verify OTP
+                      </button>
+                      <button 
+                        className="warranty-button tertiary" 
+                        onClick={handleEditEmail}
+                        type="button"
+                      >
+                        Change Email
+                      </button>
+                    </div>
+                  </>
+                )}
+              </>
+            )}
 
-          {otpToken && (
-           <>
-              <div className="warranty-field">
-                <label htmlFor="warranty-otp">Enter OTP</label>
-                <input
-                  id="warranty-otp"
-                  className="warranty-input"
-                  type="text"
-                  name="otp"
-                  required
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                />
-              </div>
-              <div className="warranty-actions">
-                <button className="warranty-button secondary" onClick={handleVerifyOtp}>
-                  Verify OTP
+            {emailVerified && (
+              <div className="verification-success">
+                <p>✅ Email verified successfully!</p>
+                <button 
+                  className="warranty-button tertiary" 
+                  onClick={handleEditEmail}
+                  type="button"
+                >
+                  Change Email
                 </button>
               </div>
-           </>
-          )}
-
-          {emailVerified && (
-            <div className="verification-success">
-              <p>✅ Email verified successfully!</p>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+          
+          {/* Rest of your form fields remain the same */}
           <div className="warranty-field">
             <label htmlFor="phone">Phone Number</label>
             <input

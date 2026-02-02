@@ -126,3 +126,25 @@
   border: 1px solid #c3e6cb;
   margin-top: 1rem;
 }
+
+
+.warranty-button.tertiary {
+  background-color: #6c757d;
+  margin-left: 10px;
+}
+
+.warranty-button.tertiary:hover {
+  background-color: #5a6268;
+}
+
+.otp-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.verification-success {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
