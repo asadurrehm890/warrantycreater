@@ -27,65 +27,65 @@ scopes = "write_products,write_customers,write_metaobjects,write_metaobject_defi
 redirect_urls = [ "https://warrantycreater-production.up.railway.app/api/auth" ]
 
 
-[metaobjects.app.warranty_registration]
-name = "Warranty Registration"
-display_name_field = "product_name"
+#[metaobjects.app.warranty_registration]
+#name = "Warranty Registration"
+#display_name_field = "product_name"
 
-[metaobjects.app.warranty_registration.access]
-admin = "merchant_read_write"
-storefront = "none"
+#[metaobjects.app.warranty_registration.access]
+#admin = "merchant_read_write"
+#storefront = "none"
 
-[metaobjects.app.warranty_registration.fields.product_name]
-name = "Product Name"
-type = "single_line_text_field"
-required = true
+#[metaobjects.app.warranty_registration.fields.product_name]
+#name = "Product Name"
+#type = "single_line_text_field"
+#required = true
 
-[metaobjects.app.warranty_registration.fields.customer_email]
-name = "Customer Email"
-type = "single_line_text_field"
-required = true
+#[metaobjects.app.warranty_registration.fields.customer_email]
+#name = "Customer Email"
+#type = "single_line_text_field"
+#required = true
 
-[metaobjects.app.warranty_registration.fields.purchase_source]
-name = "Purchase Source"
-type = "single_line_text_field"
-required = true
+#[metaobjects.app.warranty_registration.fields.purchase_source]
+#name = "Purchase Source"
+#type = "single_line_text_field"
+#required = true
 
-[metaobjects.app.warranty_registration.fields.purchase_date]
-name = "Purchase Date"
-type = "date"
-required = true
+#[metaobjects.app.warranty_registration.fields.purchase_date]
+#name = "Purchase Date"
+#type = "date"
+#required = true
 
-[metaobjects.app.warranty_registration.fields.order_number]
-name = "Order / Invoice Number"
-type = "single_line_text_field"
-required = true
+#[metaobjects.app.warranty_registration.fields.order_number]
+#name = "Order / Invoice Number"
+#type = "single_line_text_field"
+#required = true
 
-[metaobjects.app.warranty_registration.fields.serial_number]
-name = "Product Serial Number"
-type = "single_line_text_field"
-required = true
+#[metaobjects.app.warranty_registration.fields.serial_number]
+#name = "Product Serial Number"
+#type = "single_line_text_field"
+#required = true
 
-[metaobjects.app.warranty_registration.fields.warranty_start_date]
-name = "Warranty Start Date"
-type = "date"
-required = false
+#[metaobjects.app.warranty_registration.fields.warranty_start_date]
+#name = "Warranty Start Date"
+#type = "date"
+#required = false
 
-[metaobjects.app.warranty_registration.fields.warranty_end_date]
-name = "Warranty End Date"
-type = "date"
-required = false
+#[metaobjects.app.warranty_registration.fields.warranty_end_date]
+#name = "Warranty End Date"
+#type = "date"
+#required = false
 
-[metaobjects.app.warranty_registration.fields.status]
-name = "Warranty Status"
-type = "single_line_text_field"
-required = false
+#[metaobjects.app.warranty_registration.fields.status]
+#name = "Warranty Status"
+#type = "single_line_text_field"
+#required = false
 
 
-[customer.metafields.app.warranty_registration]
-type = "metaobject_reference<$app:warranty_registration>"
-name = "Warranty Registration"
+#[customer.metafields.app.warranty_registration]
+#type = "metaobject_reference<$app:warranty_registration>"
+#name = "Warranty Registration"
 
-[customer.metafields.app.warranty_registration.access]
-admin = "merchant_read_write"
-storefront = "none"
+#[customer.metafields.app.warranty_registration.access]
+#admin = "merchant_read_write"
+#storefront = "none"
 
