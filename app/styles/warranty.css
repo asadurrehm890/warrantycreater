@@ -32,6 +32,7 @@
   font-size: 1.2rem;
   margin-bottom: 0.75rem;
   grid-column: span 2;
+  text-align: center;
 }
 
 .warranty-form {

@@ -104,13 +104,23 @@ export default function WarrantyPage() {
     <main className="warranty-page">
       <h1>Warranty Activation / Product Query</h1>
 
-      <h4>Personal Information</h4>
+ 
 
+      {/* Customer Information Section */}
       <section className="warranty-section">
-        
-        
-        {/* Email Verification Section */}
-        <div className="email-verification-section">
+        <h2>Personal Information</h2>
+        <form className="warranty-form" onSubmit={handleSubmit}>
+          <div className="warranty-field">
+            <label htmlFor="full_name">Full Name</label>
+            <input
+              id="full_name"
+              className="warranty-input"
+              type="text"
+              name="full_name"
+              required
+            />
+          </div>
+            <div className="email-verification-section">
           <form className="warranty-form" onSubmit={handleSendOtp}>
             <div className="warranty-field">
               <label htmlFor="warranty-email">Email</label>
@@ -163,22 +173,6 @@ export default function WarrantyPage() {
             </div>
           )}
         </div>
-      </section>
-
-      {/* Customer Information Section */}
-      <section className="warranty-section">
-        <h2>Customer Information</h2>
-        <form className="warranty-form" onSubmit={handleSubmit}>
-          <div className="warranty-field">
-            <label htmlFor="full_name">Full Name</label>
-            <input
-              id="full_name"
-              className="warranty-input"
-              type="text"
-              name="full_name"
-              required
-            />
-          </div>
           <div className="warranty-field">
             <label htmlFor="phone">Phone Number</label>
             <input
