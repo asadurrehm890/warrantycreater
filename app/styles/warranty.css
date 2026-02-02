@@ -155,7 +155,7 @@
   align-items: flex-end;
 }
 
-.otp-actions{
+.otp-actions button{
     border-radius: 5px;
     padding: 0.5rem;
     height: 45px;
