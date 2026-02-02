@@ -468,9 +468,10 @@ export default function WarrantyPage() {
               required
             >
               <option value="">Select...</option>
-              <option>Online Store</option>
-              <option>Physical Store</option>
-              <option>Third-Party Retailer</option>
+              <option>Amazon</option>
+              <option>Ebay</option>
+              <option>Mobitel Website</option>
+              <option>Others</option>
             </select>
           </div>
 
