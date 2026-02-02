@@ -45,6 +45,7 @@
    display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1.5rem;
+  margin-top: 2rem;
 }
 
 .email-verification-section .warranty-field{
@@ -70,21 +71,25 @@
    display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  position: relative;
 }
 
 .warranty-field label {
   font-weight: 500;
-  font-size: 0.95rem;
+    font-size: .65rem;
+    position: absolute;
+    left: 1rem;
+    top: 0.35rem;
 }
 
 .warranty-input,
 .warranty-select {
-  padding: .85rem 1rem;
-  border-radius: 4px;
-  border: 1px solid #1717170d;
-  font-size: .95rem;
-  background-color: #1717170d;
-  color: #232323;
+  padding: 1.5rem 1rem 1.2rem 1rem;
+    border-radius: 4px;
+    border: 1px solid #1717170d;
+    font-size: .95rem;
+    background-color: #1717170d;
+    color: #232323;
 }
 
 .warranty-input:focus,
@@ -178,8 +183,8 @@
 
 .otp-actions button{
     border-radius: 5px;
-    padding: 0.5rem;
-    height: 45px;
+    padding: 1rem 1rem !important;
+    height: 55px;
 }
 
 
@@ -278,7 +283,7 @@
 }
 
 .postal-address-search .warranty-actions {
-  margin-top: 10px;
+  margin-top: 10px !important;
 }
 
 /* Remove the "required" styling from search input if you want */
