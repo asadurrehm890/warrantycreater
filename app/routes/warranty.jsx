@@ -38,7 +38,7 @@ export default function WarrantyPage() {
     setIsSearching(true);
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&addressdetails=1&limit=5`,
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=gb&addressdetails=1&limit=5&viewbox=-10,50,2,60`,
         {
           headers: {
             'Accept-Language': 'en',
