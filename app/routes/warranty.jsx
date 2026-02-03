@@ -262,12 +262,12 @@ export default function WarrantyPage() {
             />
           </div>
           
-          <div className="email-verification-section">
+          <div className="email-verification-section fulllwwidth">
             {!emailVerified && (
               <>
                 {!otpSent ? (
                   <>
-                    <div className="warranty-field fulllwwidth">
+                    <div className="warranty-field">
                       <label htmlFor="warranty-email">Email</label>
                       <input
                         id="warranty-email"
@@ -292,7 +292,7 @@ export default function WarrantyPage() {
                   </>
                 ) : (
                   <>
-                    <div className="warranty-field fulllwwidth">
+                    <div className="warranty-field">
                       <label htmlFor="warranty-otp">Enter OTP</label>
                       <input
                         id="warranty-otp"
@@ -321,7 +321,7 @@ export default function WarrantyPage() {
             )}
 
             {emailVerified && (
-              <div className="verification-success otp-actions fulllwwidth">
+              <div className="verification-success otp-actions">
                 <p>Email verified successfully!</p>
                 {/* <button 
                   className="warranty-button tertiary" 
