@@ -137,6 +137,7 @@
     font-size: .95rem;
     background-color: rgba(23,23,23,0.025);
     color: #232323;
+    font-family: "inter", sans-serif;
 }
 
 .warranty-input:focus,
