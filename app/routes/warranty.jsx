@@ -343,7 +343,7 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="tel"
               name="phone"
-              placeholder=" "
+              placeholder="Phone Number"
               required
             />
           </div>
