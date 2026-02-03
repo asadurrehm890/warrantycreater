@@ -82,6 +82,14 @@
     top: 0.35rem;
 }
 
+.warranty-field:focus label{
+  font-weight: 500;
+    font-size: 1rem;
+    position: absolute;
+    left: 1rem;
+    top: 0.35rem;
+}
+
 .warranty-input,
 .warranty-select {
   padding: 1.5rem 1rem 1.2rem 1rem;
