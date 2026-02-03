@@ -257,6 +257,7 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="text"
               name="full_name"
+              placeholder=" "
               required
             />
           </div>
@@ -275,6 +276,7 @@ export default function WarrantyPage() {
                         name="customer_email"
                         required
                         value={email}
+                        placeholder=" "
                         onChange={(e) => setEmail(e.target.value)}
                       />
                     </div>
@@ -299,6 +301,7 @@ export default function WarrantyPage() {
                         name="otp"
                         required
                         value={otp}
+                        placeholder=" "
                         onChange={(e) => setOtp(e.target.value)}
                         
                       />
@@ -340,6 +343,7 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="tel"
               name="phone"
+              placeholder=" "
               required
             />
           </div>
@@ -354,6 +358,7 @@ export default function WarrantyPage() {
                   className="warranty-input"
                   type="text"
                   value={addressSearch}
+                  placeholder=" "
                   onChange={(e) => setAddressSearch(e.target.value)}
                   name="search_address"
                 />
@@ -408,6 +413,7 @@ export default function WarrantyPage() {
               name="street"
               required
               value={addressFields.street}
+              placeholder=" "
               onChange={(e) => handleAddressFieldChange('street', e.target.value)}
             />
           </div>
@@ -421,6 +427,7 @@ export default function WarrantyPage() {
               name="town"
               required
               value={addressFields.town}
+              placeholder=" "
               onChange={(e) => handleAddressFieldChange('town', e.target.value)}
             />
           </div>
@@ -434,6 +441,7 @@ export default function WarrantyPage() {
               name="country"
               required
               value={addressFields.country}
+              placeholder=" "
               onChange={(e) => handleAddressFieldChange('country', e.target.value)}
             />
           </div>
@@ -447,6 +455,7 @@ export default function WarrantyPage() {
               name="postal_code"
               required
               value={addressFields.postal_code}
+              placeholder=" "
               onChange={(e) => handleAddressFieldChange('postal_code', e.target.value)}
             />
           </div>
@@ -487,6 +496,7 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="text"
               name="order_number"
+              placeholder=" "
               required
             />
           </div>
@@ -498,6 +508,7 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="text"
               name="product_name"
+              placeholder=" "
               required
             />
           </div>
@@ -509,6 +520,7 @@ export default function WarrantyPage() {
               className="warranty-input"
               type="text"
               name="serial_number"
+              placeholder=" "
               required
             />
           </div>
