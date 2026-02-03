@@ -71,6 +71,9 @@
 .flexpara{
   grid-column: span 2;
 }
+.address-autocomplete-container input{
+  width:95% !important;
+}
 }
 
 .warranty-field {
@@ -79,7 +82,7 @@
   flex-direction: column;
   gap: 0.25rem;
   position: relative;
-  overflow-x: hidden;
+ 
 }
 
 .warranty-field label {
@@ -342,5 +345,5 @@
 }
 
 .address-autocomplete-container input{
-  width:100%;
+  width:96.5%;
 }
