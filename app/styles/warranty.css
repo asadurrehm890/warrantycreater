@@ -82,7 +82,7 @@
     top: 0.35rem;
 }
 
-.warranty-field:focus label{
+.warranty-field:focus-within label{
   font-weight: 500;
     font-size: 1rem;
     position: absolute;
