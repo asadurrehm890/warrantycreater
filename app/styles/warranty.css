@@ -92,7 +92,7 @@
   top: 0.35rem !important;
    font-size: 0.65rem !important;
 }
-.warranty-field:focus-within label{
+.warranty-field:focus-within label, .warranty-input:not(:placeholder-shown) + label{
   transition:all 0.5s ease;
   font-weight: 500;
     font-size: 0.65rem;
