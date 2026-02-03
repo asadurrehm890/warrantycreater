@@ -33,24 +33,36 @@ export default function WarrantyPage() {
     return () => clearTimeout(delayDebounceFn);
   }, [addressSearch]);
 
-  // Search addresses using OpenStreetMap Nominatim API (FREE)
+  // Search addresses using Postcodes.io API (FREE - UK addresses only)
   const searchAddresses = async (query) => {
     setIsSearching(true);
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=gb&addressdetails=1&limit=5&viewbox=-10,50,2,60`,
-        {
-          headers: {
-            'Accept-Language': 'en',
-            'User-Agent': 'YourAppName/1.0 (your@email.com)' // Required by Nominatim
-          }
+      // First, try postcode lookup if it looks like a UK postcode
+      const cleanQuery = query.trim();
+      if (/^[A-Z]{1,2}\d[A-Z\d]? ?\d[A-Z]{2}$/i.test(cleanQuery)) {
+        const postcodeResponse = await fetch(
+          `https://api.postcodes.io/postcodes/${encodeURIComponent(cleanQuery)}`
+        );
+        
+        const postcodeData = await postcodeResponse.json();
+        
+        if (postcodeData.status === 200 && postcodeData.result) {
+          // For single postcode result, auto-fill directly
+          handleSelectAddress(postcodeData.result);
+          setIsSearching(false);
+          return;
         }
+      }
+      
+      // If not a postcode or postcode search failed, try places search
+      const response = await fetch(
+        `https://api.postcodes.io/places?q=${encodeURIComponent(query)}&limit=5`
       );
       
       const data = await response.json();
       
-      if (data && data.length > 0) {
-        setAddressSuggestions(data);
+      if (data.status === 200 && data.result && data.result.length > 0) {
+        setAddressSuggestions(data.result);
         setShowSuggestions(true);
       } else {
         setAddressSuggestions([]);
@@ -67,37 +79,25 @@ export default function WarrantyPage() {
 
   // Handle address selection
   const handleSelectAddress = (suggestion) => {
-    const address = suggestion.address;
-    
-    // Extract address components from OpenStreetMap response
     let street = "";
     let town = "";
-    let country = "";
+    let country = "United Kingdom";
     let postalCode = "";
 
-    // Build street address
-    if (address.road) {
-      street = address.road;
-      if (address.house_number) {
-        street += ` ${address.house_number}`;
-      }
-    } else if (address.pedestrian) {
-      street = address.pedestrian;
+    // Parse data from Postcodes.io response
+    if (suggestion.postcode) {
+      // This is from postcode lookup
+      street = [suggestion.line_1, suggestion.line_2, suggestion.line_3]
+        .filter(Boolean)
+        .join(", ");
+      town = suggestion.post_town || suggestion.region || "";
+      postalCode = suggestion.postcode;
+    } else if (suggestion.name) {
+      // This is from places search
+      town = suggestion.name;
+      postalCode = suggestion.postcode || "";
+      street = suggestion.street || "";
     }
-
-    // Get town/city (prioritize in this order)
-    town = address.city || 
-           address.town || 
-           address.village || 
-           address.municipality || 
-           address.county || 
-           "";
-
-    // Get country
-    country = address.country || "";
-
-    // Get postal code
-    postalCode = address.postcode || "";
 
     // Update address fields
     setAddressFields({
@@ -358,7 +358,7 @@ export default function WarrantyPage() {
                   className="warranty-input"
                   type="text"
                   value={addressSearch}
-                  placeholder="Search for your address..."
+                  placeholder="Search for UK address or postcode..."
                   onChange={(e) => setAddressSearch(e.target.value)}
                   name="search_address"
                 />
@@ -375,10 +375,12 @@ export default function WarrantyPage() {
                         onClick={() => handleSelectAddress(suggestion)}
                       >
                         <div className="suggestion-main">
-                          {suggestion.display_name.split(',').slice(0, 2).join(',')}
+                          {suggestion.name || suggestion.postcode}
+                          {suggestion.postcode && ` - ${suggestion.postcode}`}
                         </div>
                         <div className="suggestion-details">
-                          {suggestion.display_name.split(',').slice(2, 4).join(',')}
+                          {suggestion.county && `${suggestion.county}, `}
+                          {suggestion.country || "United Kingdom"}
                         </div>
                       </div>
                     ))}
