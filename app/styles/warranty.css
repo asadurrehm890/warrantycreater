@@ -80,6 +80,7 @@
     position: absolute;
     left: 1rem;
     top: 1.35rem;
+    display:none;
 }
 .flexpara{
   display: flex;
@@ -92,8 +93,9 @@
   top: 0.35rem !important;
    font-size: 0.65rem !important;
 }
-.warranty-field:focus-within label, .warranty-field .warranty-input.has-value{
+.warranty-field:focus-within label{
   transition:all 0.5s ease;
+  display: unset;
   font-weight: 500;
     font-size: 0.65rem;
     position: absolute;
