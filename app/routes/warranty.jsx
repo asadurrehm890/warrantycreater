@@ -250,7 +250,7 @@ export default function WarrantyPage() {
       <section className="warranty-section">
         <h2>Personal Information</h2>
         <form className="warranty-form" onSubmit={handleSubmit}>
-          <div className="warranty-field">
+          <div className="warranty-field fulllwwidth">
             <label htmlFor="full_name">Full Name</label>
             <input
               id="full_name"
@@ -267,7 +267,7 @@ export default function WarrantyPage() {
               <>
                 {!otpSent ? (
                   <>
-                    <div className="warranty-field">
+                    <div className="warranty-field fulllwwidth">
                       <label htmlFor="warranty-email">Email</label>
                       <input
                         id="warranty-email"
@@ -292,7 +292,7 @@ export default function WarrantyPage() {
                   </>
                 ) : (
                   <>
-                    <div className="warranty-field">
+                    <div className="warranty-field fulllwwidth">
                       <label htmlFor="warranty-otp">Enter OTP</label>
                       <input
                         id="warranty-otp"
@@ -321,7 +321,7 @@ export default function WarrantyPage() {
             )}
 
             {emailVerified && (
-              <div className="verification-success otp-actions">
+              <div className="verification-success otp-actions fulllwwidth">
                 <p>Email verified successfully!</p>
                 {/* <button 
                   className="warranty-button tertiary" 
