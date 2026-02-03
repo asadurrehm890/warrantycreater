@@ -330,9 +330,9 @@ export default function WarrantyPage() {
               </div>
             )}
 
-            <p><input type="checkbox" name="termsformarketing" id="termsformarketing" required /> I agree to receive marketing communications from Mobitel regarding products, services, offers, and promotions. I understand that I can unsubscribe at any time.</p>
+           
           </div>
-          
+           <p className="flexpara"><input type="checkbox" name="termsformarketing" id="termsformarketing" required /> I agree to receive marketing communications from Mobitel regarding products, services, offers, and promotions. I understand that I can unsubscribe at any time.</p>
           <div className="warranty-field">
             <label htmlFor="phone">Phone Number</label>
             <input

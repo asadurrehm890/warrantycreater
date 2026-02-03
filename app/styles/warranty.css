@@ -81,6 +81,12 @@
     left: 1rem;
     top: 1.35rem;
 }
+.flexpara{
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  font-size: 0.75rem;
+}
 
 .labelupper908 label{
   top: 0.35rem !important;
