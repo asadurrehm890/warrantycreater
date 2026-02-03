@@ -323,13 +323,7 @@ export default function WarrantyPage() {
             {emailVerified && (
               <div className="verification-success otp-actions">
                 <p>Email verified successfully!</p>
-                {/* <button 
-                  className="warranty-button tertiary" 
-                  onClick={handleEditEmail}
-                  type="button"
-                >
-                  Change Email
-                </button> */}
+                {/* <button className="warranty-button tertiary" onClick={handleEditEmail} type="button"> Change Email</button> */}
               </div>
             )}
 
