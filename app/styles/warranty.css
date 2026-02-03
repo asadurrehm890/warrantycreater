@@ -63,7 +63,14 @@
     flex-direction: column;
     align-items: flex-start !important;
     width: 100%;
+    grid-column: span 2;
   }
+  .email-verification-section .warranty-field {
+    width: 100%;
+}
+.flexpara{
+  grid-column: span 2;
+}
 }
 
 .warranty-field {
