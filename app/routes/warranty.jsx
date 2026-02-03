@@ -22,6 +22,17 @@ export default function WarrantyPage() {
     postal_code: ""
   });
 
+  // State for all form fields
+  const [formFields, setFormFields] = useState({
+    full_name: "",
+    phone: "",
+    purchase_source: "",
+    purchase_date: "",
+    order_number: "",
+    product_name: "",
+    serial_number: ""
+  });
+
   // Debounce address search
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -124,6 +135,14 @@ export default function WarrantyPage() {
     }));
   };
 
+  // Handle changes to form fields
+  const handleFormFieldChange = (field, value) => {
+    setFormFields(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
   // Close suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -216,6 +235,9 @@ export default function WarrantyPage() {
     // Add address fields to the submission
     Object.assign(body, addressFields);
 
+    // Add form fields to the submission
+    Object.assign(body, formFields);
+
     setStatusType(null);
     setStatus("Submitting warranty...");
     try {
@@ -242,26 +264,36 @@ export default function WarrantyPage() {
     }
   }
 
+  // Helper function to determine if a field has value
+  const hasValue = (value) => {
+    return value && value.trim().length > 0;
+  };
+
   return (
     <main className="warranty-page">
       <h1>Warranty Activation</h1>
       <p className="paragraph">Please provide your personal and order details to activate your product warranty.</p>
-      {/* Customer Information Section */}
+      
       <section className="warranty-section">
         <h2>Personal Information</h2>
         <form className="warranty-form" onSubmit={handleSubmit}>
+          
+          {/* Full Name */}
           <div className="warranty-field">
             <label htmlFor="full_name">Full Name</label>
             <input
               id="full_name"
-              className="warranty-input"
+              className={`warranty-input ${hasValue(formFields.full_name) ? 'has-value' : ''}`}
               type="text"
               name="full_name"
               placeholder=" "
               required
+              value={formFields.full_name}
+              onChange={(e) => handleFormFieldChange('full_name', e.target.value)}
             />
           </div>
           
+          {/* Email Verification Section */}
           <div className="email-verification-section">
             {!emailVerified && (
               <>
@@ -271,7 +303,7 @@ export default function WarrantyPage() {
                       <label htmlFor="warranty-email">Email</label>
                       <input
                         id="warranty-email"
-                        className="warranty-input"
+                        className={`warranty-input ${hasValue(email) ? 'has-value' : ''}`}
                         type="email"
                         name="customer_email"
                         required
@@ -284,7 +316,7 @@ export default function WarrantyPage() {
                       <button 
                         className="warranty-button" 
                         onClick={handleSendOtp}
-                        disabled={!email.trim()}
+                        disabled={!hasValue(email)}
                       >
                         Request OTP
                       </button>
@@ -296,21 +328,20 @@ export default function WarrantyPage() {
                       <label htmlFor="warranty-otp">Enter OTP</label>
                       <input
                         id="warranty-otp"
-                        className="warranty-input"
+                        className={`warranty-input ${hasValue(otp) ? 'has-value' : ''}`}
                         type="text"
                         name="otp"
                         required
                         value={otp}
                         placeholder=" "
                         onChange={(e) => setOtp(e.target.value)}
-                        
                       />
                     </div>
                     <div className="warranty-actions otp-actions">
                       <button 
                         className="warranty-button secondary" 
                         onClick={handleVerifyOtp}
-                        disabled={!otp.trim()}
+                        disabled={!hasValue(otp)}
                       >
                         Verify OTP
                       </button>
@@ -332,19 +363,27 @@ export default function WarrantyPage() {
                 </button>
               </div>
             )}
-
-           
           </div>
-           <p className="flexpara"><input type="checkbox" name="termsformarketing" id="termsformarketing" required /> I agree to receive marketing communications from Mobitel regarding products, services, offers, and promotions. I understand that I can unsubscribe at any time.</p>
+          
+          {/* Marketing Terms */}
+          <p className="flexpara">
+            <input type="checkbox" name="termsformarketing" id="termsformarketing" required /> 
+            I agree to receive marketing communications from Mobitel regarding products, services, offers, and promotions. 
+            I understand that I can unsubscribe at any time.
+          </p>
+          
+          {/* Phone Number */}
           <div className="warranty-field">
             <label htmlFor="phone">Phone Number</label>
             <input
               id="phone"
-              className="warranty-input"
+              className={`warranty-input ${hasValue(formFields.phone) ? 'has-value' : ''}`}
               type="tel"
               name="phone"
               placeholder=" "
               required
+              value={formFields.phone}
+              onChange={(e) => handleFormFieldChange('phone', e.target.value)}
             />
           </div>
 
@@ -355,7 +394,7 @@ export default function WarrantyPage() {
               <div className="address-autocomplete-container">
                 <input
                   id="search_address"
-                  className="warranty-input"
+                  className={`warranty-input ${hasValue(addressSearch) ? 'has-value' : ''}`}
                   type="text"
                   value={addressSearch}
                   placeholder=" "
@@ -392,11 +431,11 @@ export default function WarrantyPage() {
                 className="warranty-button secondary" 
                 type="button"
                 onClick={() => {
-                  if (addressSearch.trim()) {
+                  if (hasValue(addressSearch)) {
                     searchAddresses(addressSearch);
                   }
                 }}
-                disabled={!addressSearch.trim()}
+                disabled={!hasValue(addressSearch)}
               >
                 {isSearching ? "Searching..." : "Find Address"}
               </button>
@@ -408,7 +447,7 @@ export default function WarrantyPage() {
             <label htmlFor="street">Street Address</label>
             <input
               id="street"
-              className="warranty-input"
+              className={`warranty-input ${hasValue(addressFields.street) ? 'has-value' : ''}`}
               type="text"
               name="street"
               required
@@ -422,7 +461,7 @@ export default function WarrantyPage() {
             <label htmlFor="town">Town / City</label>
             <input
               id="town"
-              className="warranty-input"
+              className={`warranty-input ${hasValue(addressFields.town) ? 'has-value' : ''}`}
               type="text"
               name="town"
               required
@@ -436,7 +475,7 @@ export default function WarrantyPage() {
             <label htmlFor="country">Country</label>
             <input
               id="country"
-              className="warranty-input"
+              className={`warranty-input ${hasValue(addressFields.country) ? 'has-value' : ''}`}
               type="text"
               name="country"
               required
@@ -450,7 +489,7 @@ export default function WarrantyPage() {
             <label htmlFor="postal_code">Postal Code</label>
             <input
               id="postal_code"
-              className="warranty-input"
+              className={`warranty-input ${hasValue(addressFields.postal_code) ? 'has-value' : ''}`}
               type="text"
               name="postal_code"
               required
@@ -462,13 +501,16 @@ export default function WarrantyPage() {
 
           <h2>Order Details</h2>
 
+          {/* Purchase Source (Select) */}
           <div className="warranty-field labelupper908">
             <label htmlFor="purchase_source">Purchase Source</label>
             <select
               id="purchase_source"
-              className="warranty-select"
+              className={`warranty-select ${hasValue(formFields.purchase_source) ? 'has-value' : ''}`}
               name="purchase_source"
               required
+              value={formFields.purchase_source}
+              onChange={(e) => handleFormFieldChange('purchase_source', e.target.value)}
             >
               <option value="">Select...</option>
               <option>Amazon</option>
@@ -478,50 +520,62 @@ export default function WarrantyPage() {
             </select>
           </div>
 
+          {/* Purchase Date */}
           <div className="warranty-field labelupper908">
             <label htmlFor="purchase_date">Purchase Date</label>
             <input
               id="purchase_date"
-              className="warranty-input"
+              className={`warranty-input ${hasValue(formFields.purchase_date) ? 'has-value' : ''}`}
               type="date"
               name="purchase_date"
               required
+              value={formFields.purchase_date}
+              onChange={(e) => handleFormFieldChange('purchase_date', e.target.value)}
             />
           </div>
 
+          {/* Order/Invoice Number */}
           <div className="warranty-field">
             <label htmlFor="order_number">Order / Invoice Number</label>
             <input
               id="order_number"
-              className="warranty-input"
+              className={`warranty-input ${hasValue(formFields.order_number) ? 'has-value' : ''}`}
               type="text"
               name="order_number"
               placeholder=" "
               required
+              value={formFields.order_number}
+              onChange={(e) => handleFormFieldChange('order_number', e.target.value)}
             />
           </div>
 
+          {/* Product Name */}
           <div className="warranty-field">
             <label htmlFor="product_name">Product Name</label>
             <input
               id="product_name"
-              className="warranty-input"
+              className={`warranty-input ${hasValue(formFields.product_name) ? 'has-value' : ''}`}
               type="text"
               name="product_name"
               placeholder=" "
               required
+              value={formFields.product_name}
+              onChange={(e) => handleFormFieldChange('product_name', e.target.value)}
             />
           </div>
 
+          {/* Product Serial Number */}
           <div className="warranty-field">
             <label htmlFor="serial_number">Product Serial Number</label>
             <input
               id="serial_number"
-              className="warranty-input"
+              className={`warranty-input ${hasValue(formFields.serial_number) ? 'has-value' : ''}`}
               type="text"
               name="serial_number"
               placeholder=" "
               required
+              value={formFields.serial_number}
+              onChange={(e) => handleFormFieldChange('serial_number', e.target.value)}
             />
           </div>
 
@@ -536,6 +590,7 @@ export default function WarrantyPage() {
           </div>
         </form>
         
+        {/* Status Message */}
         {status && (
           <p
             className={
