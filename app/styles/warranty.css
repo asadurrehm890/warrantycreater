@@ -49,7 +49,7 @@
 }
 
 .email-verification-section .warranty-field{
-  width: 70%;
+  width: 72%;
 }
 
 @media (max-width: 992px) {
@@ -72,6 +72,7 @@
   flex-direction: column;
   gap: 0.25rem;
   position: relative;
+  overflow-x: hidden;
 }
 
 .warranty-field label {
@@ -216,6 +217,7 @@
   display: flex;
   gap: 0.5rem;
   align-items: flex-end;
+  justify-content: space-between;
 }
 
 .otp-actions button{
@@ -333,5 +335,5 @@
 }
 
 .address-autocomplete-container input{
-  width:95%;
+  width:100%;
 }
