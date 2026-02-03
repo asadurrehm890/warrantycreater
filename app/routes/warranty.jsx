@@ -453,7 +453,7 @@ export default function WarrantyPage() {
 
           <h2>Order Details</h2>
 
-          <div className="warranty-field">
+          <div className="warranty-field labelupper908">
             <label htmlFor="purchase_source">Purchase Source</label>
             <select
               id="purchase_source"
@@ -469,7 +469,7 @@ export default function WarrantyPage() {
             </select>
           </div>
 
-          <div className="warranty-field">
+          <div className="warranty-field labelupper908">
             <label htmlFor="purchase_date">Purchase Date</label>
             <input
               id="purchase_date"
