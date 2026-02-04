@@ -9,6 +9,11 @@ export default function WarrantyPage() {
   const [status, setStatus] = useState(null);
   const [statusType, setStatusType] = useState(null);
   const [otpSent, setOtpSent] = useState(false);
+
+  const [products, setProducts] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+  const [productsError, setProductsError] = useState(null);
+  const [selectedProductId, setSelectedProductId] = useState("");
   
   // Address states
   const [addressSearch, setAddressSearch] = useState("");
@@ -32,6 +37,31 @@ export default function WarrantyPage() {
 
     return () => clearTimeout(delayDebounceFn);
   }, [addressSearch]);
+
+
+    // Fetch products for the Product Name select
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setProductsLoading(true);
+        setProductsError(null);
+
+        const res = await fetch("/api/products");
+        if (!res.ok) {
+          throw new Error("Failed to load products");
+        }
+        const data = await res.json();
+        setProducts(data.products || []);
+      } catch (err) {
+        console.error("Error fetching products:", err);
+        setProductsError("Failed to load products");
+      } finally {
+        setProductsLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   // Search addresses using OpenStreetMap Nominatim API (FREE)
   const searchAddresses = async (query) => {
@@ -215,6 +245,11 @@ export default function WarrantyPage() {
 
     // Add address fields to the submission
     Object.assign(body, addressFields);
+
+    const selectedProduct = products.find(p => p.id === body.product_id);
+    if (selectedProduct) {
+      body.product_title = selectedProduct.title;
+    }
 
     setStatusType(null);
     setStatus("Submitting warranty...");
@@ -496,16 +531,38 @@ export default function WarrantyPage() {
           </div>
 
           <div className="warranty-field">
-            <label htmlFor="product_name">Product Name</label>
-            <input
-              id="product_name"
-              className="warranty-input"
-              type="text"
-              name="product_name"
-              placeholder="Product Name"
-              required
-            />
-          </div>
+          <label htmlFor="product_id">Product</label>
+          <select
+            id="product_id"
+            className="warranty-select"
+            name="product_id"
+            required
+            value={selectedProductId}
+            onChange={(e) => setSelectedProductId(e.target.value)}
+            disabled={productsLoading || !!productsError}
+          >
+            <option value="">
+              {productsLoading
+                ? "Loading products..."
+                : productsError
+                ? "Failed to load products"
+                : "Select a product"}
+            </option>
+
+            {!productsLoading && !productsError &&
+              products.map((product) => (
+                <option key={product.id} value={product.id}>
+                  {product.title}
+                </option>
+              ))}
+          </select>
+
+          {productsError && (
+            <p className="warranty-status warranty-status--error">
+              {productsError}
+            </p>
+          )}
+        </div>
 
           <div className="warranty-field">
             <label htmlFor="serial_number">Product Serial Number</label>
