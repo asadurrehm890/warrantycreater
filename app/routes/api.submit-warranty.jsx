@@ -363,6 +363,7 @@ async function createWarrantyMetaobject(session, input) {
 
 
 // Updates the customer's email marketing consent to SUBSCRIBED
+// Updates the customer's email marketing consent to SUBSCRIBED
 async function updateCustomerEmailMarketingConsent(session, customerId) {
   const mutation = `#graphql
     mutation CustomerEmailMarketingConsentSubscribe(
@@ -371,6 +372,12 @@ async function updateCustomerEmailMarketingConsent(session, customerId) {
       customerEmailMarketingConsentUpdate(input: $input) {
         customer {
           id
+          emailAddress {
+            emailAddress
+            marketingState
+            marketingOptInLevel
+            consentUpdatedAt
+          }
         }
         userErrors {
           field
@@ -388,7 +395,6 @@ async function updateCustomerEmailMarketingConsent(session, customerId) {
       emailMarketingConsent: {
         marketingState: "SUBSCRIBED",
         marketingOptInLevel: "SINGLE_OPT_IN",
-        consentCollectedFrom: "OTHER",
         consentUpdatedAt: nowIso,
       },
     },
