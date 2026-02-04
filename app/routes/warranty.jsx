@@ -34,7 +34,7 @@ export default function WarrantyPage() {
   const [countries, setCountries] = useState([]);
   const [countriesLoading, setCountriesLoading] = useState(false);
 
-  // Static fallback list for countries
+  // Static fallback list for countries - accurate phone codes
   const staticCountries = [
     { code: "+44", country: "United Kingdom", flag: "🇬🇧", isoCode: "GB" },
     { code: "+1", country: "United States", flag: "🇺🇸", isoCode: "US" },
@@ -46,14 +46,24 @@ export default function WarrantyPage() {
     { code: "+81", country: "Japan", flag: "🇯🇵", isoCode: "JP" },
     { code: "+65", country: "Singapore", flag: "🇸🇬", isoCode: "SG" },
     { code: "+971", country: "United Arab Emirates", flag: "🇦🇪", isoCode: "AE" },
+    { code: "+41", country: "Switzerland", flag: "🇨🇭", isoCode: "CH" },
+    { code: "+39", country: "Italy", flag: "🇮🇹", isoCode: "IT" },
+    { code: "+34", country: "Spain", flag: "🇪🇸", isoCode: "ES" },
+    { code: "+31", country: "Netherlands", flag: "🇳🇱", isoCode: "NL" },
+    { code: "+32", country: "Belgium", flag: "🇧🇪", isoCode: "BE" },
+    { code: "+46", country: "Sweden", flag: "🇸🇪", isoCode: "SE" },
+    { code: "+47", country: "Norway", flag: "🇳🇴", isoCode: "NO" },
+    { code: "+45", country: "Denmark", flag: "🇩🇰", isoCode: "DK" },
+    { code: "+358", country: "Finland", flag: "🇫🇮", isoCode: "FI" },
+    { code: "+353", country: "Ireland", flag: "🇮🇪", isoCode: "IE" },
   ];
 
-  // Fetch countries from free API
+  // Fetch countries from better API
   useEffect(() => {
     const fetchCountries = async () => {
       setCountriesLoading(true);
       try {
-        // Using RestCountries API - free, no key required
+        // Using a more reliable API for phone codes
         const response = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,idd,flags');
         const data = await response.json();
         
@@ -61,15 +71,20 @@ export default function WarrantyPage() {
         const formattedCountries = data
           .filter(country => {
             // Only include countries with phone codes
-            return country.idd && country.idd.root && country.idd.suffixes;
+            return country.idd && country.idd.root;
           })
           .map(country => {
-            // Get first phone suffix (some countries have multiple)
-            const suffix = Array.isArray(country.idd.suffixes) 
-              ? country.idd.suffixes[0] 
-              : '';
+            // Get phone code - handle different formats
+            let phoneCode = country.idd.root;
             
-            const phoneCode = `${country.idd.root}${suffix}`;
+            // Some countries have suffixes
+            if (country.idd.suffixes && country.idd.suffixes.length > 0) {
+              // Take the first suffix (usually the main one)
+              phoneCode = phoneCode + (country.idd.suffixes[0] || '');
+            }
+            
+            // Clean up the phone code
+            phoneCode = phoneCode.replace(/\s+/g, '');
             
             // Get flag emoji from country code
             const getFlagEmoji = (countryCode) => {
@@ -88,7 +103,18 @@ export default function WarrantyPage() {
               isoCode: country.cca2
             };
           })
-          .filter(country => country.code && country.code !== '+')
+          .filter(country => {
+            // Filter out invalid codes and duplicates
+            return country.code && 
+                   country.code !== '+' && 
+                   country.code.length > 1 &&
+                   // Filter out territories that aren't countries
+                   !country.country.includes('Island') &&
+                   !country.country.includes('Guernsey') &&
+                   !country.country.includes('Jersey') &&
+                   !country.country.includes('Isle of Man');
+          })
+          // Sort alphabetically by country name
           .sort((a, b) => a.country.localeCompare(b.country));
         
         // Set countries, default to UK as selected
@@ -512,60 +538,65 @@ export default function WarrantyPage() {
             services, offers, and promotions. I understand that I can unsubscribe at any time.
           </p>
           
-          {/* Phone Number Section */}
-          <div className="phone-number-section fulllwwidth">
+          {/* Phone Number Section - Updated to match your form style */}
+          <div className="warranty-field fulllwwidth">
             <label htmlFor="phone">Phone Number</label>
-            <div className="phone-input-group">
-              {/* Country Code Selector */}
-              <div className="country-code-selector">
-                <select
-                  id="phone_country_code"
-                  className="warranty-select phone-country-code"
-                  value={phoneCountryCode}
-                  onChange={(e) => setPhoneCountryCode(e.target.value)}
-                  disabled={countriesLoading}
-                >
-                  {countriesLoading ? (
-                    <option value="+44">Loading countries...</option>
-                  ) : (
-                    <>
-                      {countries.map((country) => (
-                        <option key={country.isoCode || country.code} value={country.code}>
-                          {country.flag} {country.code} ({country.country})
-                        </option>
-                      ))}
-                    </>
-                  )}
-                </select>
+            <div className="phone-field-container">
+              <div className="phone-field-group">
+                <div className="country-code-field">
+                  <label htmlFor="phone_country_code" className="phone-sub-label">Country Code</label>
+                  <div className="country-code-wrapper">
+                    <select
+                      id="phone_country_code"
+                      className="warranty-select"
+                      value={phoneCountryCode}
+                      onChange={(e) => setPhoneCountryCode(e.target.value)}
+                      disabled={countriesLoading}
+                    >
+                      {countriesLoading ? (
+                        <option value="+44">Loading countries...</option>
+                      ) : (
+                        <>
+                          <option value="" disabled>Select country</option>
+                          {countries.map((country) => (
+                            <option key={country.isoCode || country.code} value={country.code}>
+                              {country.flag} {country.country} ({country.code})
+                            </option>
+                          ))}
+                        </>
+                      )}
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="phone-number-field">
+                  <label htmlFor="phone" className="phone-sub-label">Phone Number</label>
+                  <input
+                    id="phone"
+                    className="warranty-input"
+                    type="tel"
+                    value={phoneNumber}
+                    onChange={(e) => handlePhoneNumberChange(e.target.value)}
+                    placeholder="123 456 7890"
+                    required
+                  />
+                </div>
               </div>
               
-              {/* Phone Number Input */}
-              <div className="phone-number-input">
-                <input
-                  id="phone"
-                  className="warranty-input"
-                  type="tel"
-                  value={phoneNumber}
-                  onChange={(e) => handlePhoneNumberChange(e.target.value)}
-                  placeholder="Enter your phone number"
-                  required
-                />
-              </div>
+              {/* Display preview of full phone number */}
+              {phoneNumber && (
+                <div className="phone-preview">
+                  Full phone number: <strong>{phoneCountryCode} {phoneNumber}</strong>
+                </div>
+              )}
+              
+              {/* Phone number error message */}
+              {phoneError && (
+                <div className="phone-error">
+                  {phoneError}
+                </div>
+              )}
             </div>
-            
-            {/* Display preview of full phone number */}
-            {phoneNumber && (
-              <div className="phone-preview">
-                Full phone number: <strong>{phoneCountryCode}{phoneNumber}</strong>
-              </div>
-            )}
-            
-            {/* Phone number error message */}
-            {phoneError && (
-              <div className="phone-error">
-                {phoneError}
-              </div>
-            )}
           </div>
 
           {/* Address Search with Autocomplete */}

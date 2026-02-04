@@ -379,77 +379,86 @@
 }
 
 
-/* Phone Number Input Group */
-.phone-number-section {
-  margin-bottom: 1.5rem;
+/* Phone Number Field Styling to match your existing design */
+.phone-field-container {
+  width: 100%;
 }
 
-.phone-number-section label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-  color: #333;
-}
-
-.phone-input-group {
+.phone-field-group {
   display: flex;
-  gap: 10px;
-  align-items: center;
+  gap: 15px;
+  align-items: flex-end;
 }
 
-.country-code-selector {
-  flex: 0 0 auto;
+.country-code-field,
+.phone-number-field {
+  flex: 1;
 }
 
-.phone-country-code {
-  min-width: 180px;
-  padding: 12px;
-  height: 48px;
+.phone-sub-label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.country-code-wrapper {
+  position: relative;
+}
+
+.country-code-wrapper select {
+  width: 100%;
+  padding: 12px 15px;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 16px;
   background-color: white;
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 15px center;
+  background-size: 16px;
+  padding-right: 40px;
 }
 
-.phone-country-code option {
-  padding: 8px;
-  font-size: 14px;
+.country-code-wrapper select option {
+  padding: 10px;
+  font-size: 15px;
 }
 
-.phone-country-code:disabled {
+.country-code-wrapper select:disabled {
   background-color: #f5f5f5;
   cursor: not-allowed;
+  opacity: 0.7;
 }
 
-.phone-number-input {
-  flex: 1;
-}
-
-.phone-number-input input {
+.phone-number-field input {
   width: 100%;
-  height: 48px;
-  padding: 12px;
+  padding: 12px 15px;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 16px;
 }
 
 .phone-preview {
-  margin-top: 8px;
+  margin-top: 10px;
   font-size: 14px;
   color: #666;
-  padding: 6px 12px;
+  padding: 8px 12px;
   background-color: #f8f9fa;
   border-radius: 4px;
-  border-left: 3px solid #007bff;
+  border-left: 3px solid #4CAF50;
 }
 
 .phone-error {
   margin-top: 8px;
   font-size: 14px;
   color: #dc3545;
-  padding: 6px 12px;
+  padding: 8px 12px;
   background-color: #f8d7da;
   border-radius: 4px;
   border-left: 3px solid #dc3545;
@@ -457,21 +466,41 @@
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .phone-input-group {
+  .phone-field-group {
     flex-direction: column;
-    gap: 8px;
+    gap: 10px;
   }
   
-  .country-code-selector {
+  .country-code-field,
+  .phone-number-field {
     width: 100%;
   }
-  
-  .phone-country-code {
-    width: 100%;
-    min-width: unset;
-  }
-  
-  .phone-number-input {
-    width: 100%;
-  }
+}
+
+/* Make sure it matches your existing warranty form styling */
+.warranty-field {
+  margin-bottom: 20px;
+}
+
+.warranty-field label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+  font-size: 16px;
+}
+
+.warranty-input, .warranty-select {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.warranty-input:focus, .warranty-select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
 }
