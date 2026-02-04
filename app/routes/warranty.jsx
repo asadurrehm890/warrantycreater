@@ -594,6 +594,7 @@ export default function WarrantyPage() {
             </button>
           </div>
         </form>
+        <p className="paralast0900009">By completing this form, you accept our <a href="#">Terms & Conditions</a> and acknowledge our <a href="#">Privacy Policy.</a></p>
         
         {status && (
           <p
