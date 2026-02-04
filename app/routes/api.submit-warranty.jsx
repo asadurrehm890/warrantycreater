@@ -21,7 +21,8 @@ export async function action({ request }) {
   const purchaseSource = String(body.purchase_source || "").trim();
   const purchaseDate = String(body.purchase_date || "").trim();
   const orderNumber = String(body.order_number || "").trim();
-  const productName = String(body.product_name || "").trim();
+  const productId = String(body.product_id || "").trim();
+  const productName = String(body.product_title || "").trim(); // optional, but useful
   const serialNumber = String(body.serial_number || "").trim();
 
   if (
@@ -35,7 +36,7 @@ export async function action({ request }) {
     !purchaseSource ||
     !purchaseDate ||
     !orderNumber ||
-    !productName ||
+    !productId ||
     !serialNumber
   ) {
     return new Response(JSON.stringify({ error: "Missing required fields" }), {
