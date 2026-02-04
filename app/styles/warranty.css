@@ -379,12 +379,13 @@
 }
 
 #phone_country_code{
-  width: 50% !important;
+  width: 20% !important;
 }
 
 
 .phone98008008{
   flex-direction:row !important;
+  gap:1rem !important;
 }
 input#phone{
   width: 100% !important;
