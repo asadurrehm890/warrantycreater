@@ -51,13 +51,26 @@ async function callAdminGraphQL(session, query, variables = {}) {
 
 // Validated Admin GraphQL query for products
 // Reference: https://shopify.dev/docs/api/admin-graphql/latest/queries/products
+// const PRODUCTS_QUERY = `#graphql
+//   query WarrantyProducts($first: Int!) {
+//     products(first: $first) {
+//       nodes {
+//         id
+//         title
+//         handle
+//       }
+//     }
+//   }
+// `;
+
 const PRODUCTS_QUERY = `#graphql
-  query WarrantyProducts($first: Int!) {
-    products(first: $first) {
+  query WarrantyProductsByVendor($first: Int!, $query: String!) {
+    products(first: $first, query: $query) {
       nodes {
         id
         title
         handle
+        vendor
       }
     }
   }
@@ -93,6 +106,7 @@ export async function loader({ request }) {
   // Call Admin GraphQL with offline session
   const productsRes = await callAdminGraphQL(session, PRODUCTS_QUERY, {
     first: 50, // adjust as you like
+    query: "vendor:mobitel",
   });
 
   if (!productsRes.ok) {
