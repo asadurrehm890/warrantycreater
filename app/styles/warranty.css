@@ -54,14 +54,8 @@
   width: 86%;
 }
 
-@media (max-width: 992px) {
-  .warranty-form {
-    grid-template-columns: 1fr !important;
-  }
-  .warranty-field{
-    grid-column: span 2;
-  }
-  .email-verification-section{
+@media(max-width:767px){
+ .email-verification-section{
     flex-direction: column;
     align-items: flex-start !important;
     width: 100%;
@@ -70,6 +64,16 @@
   .email-verification-section .warranty-field {
     width: 100%;
 }
+}
+
+@media (max-width: 992px) {
+  .warranty-form {
+    grid-template-columns: 1fr !important;
+  }
+  .warranty-field{
+    grid-column: span 2;
+  }
+ 
 .flexpara{
   grid-column: span 2;
 }
