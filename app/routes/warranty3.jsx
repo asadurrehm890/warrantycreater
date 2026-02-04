@@ -19,18 +19,16 @@ export default function WarrantyPage() {
   const [productSearchTerm, setProductSearchTerm] = useState("");
   const [showProductDropdown, setShowProductDropdown] = useState(false);
 
-  // Address states - UPDATED for Ideal Postcodes
+  // Address states
   const [addressSearch, setAddressSearch] = useState("");
   const [addressSuggestions, setAddressSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [addressFields, setAddressFields] = useState({
-    line_1: "", // Street address
-    line_2: "", // Optional second line
-    line_3: "", // Optional third line
-    post_town: "", // Town/city
-    postcode: "", // Postal code
-    country: "United Kingdom", // Default to UK
+    street: "",
+    town: "",
+    country: "",
+    postal_code: "",
   });
 
   // Phone number states
@@ -64,28 +62,37 @@ export default function WarrantyPage() {
     { code: "+353", country: "Ireland", flag: "🇮🇪", isoCode: "IE" },
   ];
 
-  // Ideal Postcodes API Key - Replace with your actual key
-  const IDEAL_POSTCODES_API_KEY = "your_api_key_here"; // Get from https://ideal-postcodes.co.uk/
-
   // Fetch countries from better API
   useEffect(() => {
     const fetchCountries = async () => {
       setCountriesLoading(true);
       try {
+        // Using a more reliable API for phone codes
         const response = await fetch(
           "https://restcountries.com/v3.1/all?fields=name,cca2,idd,flags"
         );
         const data = await response.json();
 
+        // Process country data
         const formattedCountries = data
-          .filter((country) => country.idd && country.idd.root)
+          .filter((country) => {
+            // Only include countries with phone codes
+            return country.idd && country.idd.root;
+          })
           .map((country) => {
+            // Get phone code - handle different formats
             let phoneCode = country.idd.root;
+
+            // Some countries have suffixes
             if (country.idd.suffixes && country.idd.suffixes.length > 0) {
+              // Take the first suffix (usually the main one)
               phoneCode = phoneCode + (country.idd.suffixes[0] || "");
             }
+
+            // Clean up the phone code
             phoneCode = phoneCode.replace(/\s+/g, "");
 
+            // Get flag emoji from country code
             const getFlagEmoji = (countryCode) => {
               if (!countryCode || countryCode.length !== 2) return "🏳️";
               const codePoints = countryCode
@@ -102,12 +109,27 @@ export default function WarrantyPage() {
               isoCode: country.cca2,
             };
           })
-          .filter((country) => country.code && country.code !== "+" && country.code.length > 1)
+          .filter((country) => {
+            // Filter out invalid codes and duplicates
+            return (
+              country.code &&
+              country.code !== "+" &&
+              country.code.length > 1 &&
+              // Filter out territories that aren't countries
+              !country.country.includes("Island") &&
+              !country.country.includes("Guernsey") &&
+              !country.country.includes("Jersey") &&
+              !country.country.includes("Isle of Man")
+            );
+          })
+          // Sort alphabetically by country name
           .sort((a, b) => a.country.localeCompare(b.country));
 
+        // Set countries, default to UK as selected
         setCountries(formattedCountries);
       } catch (error) {
         console.error("Error fetching countries:", error);
+        // Use static list as fallback
         setCountries(staticCountries);
       } finally {
         setCountriesLoading(false);
@@ -117,13 +139,13 @@ export default function WarrantyPage() {
     fetchCountries();
   }, []);
 
-  // Debounce address search - UPDATED for Ideal Postcodes
+  // Debounce address search
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       if (addressSearch.trim().length > 2) {
         searchAddresses(addressSearch);
       }
-    }, 300); // Reduced to 300ms for better UX
+    }, 500); // Wait 500ms after user stops typing
 
     return () => clearTimeout(delayDebounceFn);
   }, [addressSearch]);
@@ -157,78 +179,19 @@ export default function WarrantyPage() {
     product.title.toLowerCase().includes(productSearchTerm.toLowerCase())
   );
 
-  // Search addresses using Ideal Postcodes API (UK-specific, more accurate)
+  // Search addresses using OpenStreetMap Nominatim API (FREE)
   const searchAddresses = async (query) => {
     setIsSearching(true);
-    setShowSuggestions(false);
-    
-    try {
-      const response = await fetch(
-        `https://api.ideal-postcodes.co.uk/v1/autocomplete/addresses?api_key=${IDEAL_POSTCODES_API_KEY}&query=${encodeURIComponent(
-          query
-        )}&limit=5`
-      );
-
-      const data = await response.json();
-
-      if (data.result && data.result.hits && data.result.hits.length > 0) {
-        setAddressSuggestions(data.result.hits);
-        setShowSuggestions(true);
-      } else {
-        setAddressSuggestions([]);
-        // Fallback to postcode lookup if no address results
-        if (query.length >= 4 && query.length <= 8) {
-          await searchByPostcode(query);
-        }
-      }
-    } catch (err) {
-      console.error("Address search error:", err);
-      setAddressSuggestions([]);
-      setShowSuggestions(false);
-      // Fallback to Nominatim if Ideal Postcodes fails
-      await fallbackSearchAddresses(query);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  // Search by postcode directly
-  const searchByPostcode = async (postcode) => {
-    try {
-      const response = await fetch(
-        `https://api.ideal-postcodes.co.uk/v1/postcodes/${encodeURIComponent(
-          postcode
-        )}?api_key=${IDEAL_POSTCODES_API_KEY}`
-      );
-
-      const data = await response.json();
-
-      if (data.result && data.result.length > 0) {
-        // Format the results for display
-        const formattedResults = data.result.map((address) => ({
-          id: address.id,
-          display_name: `${address.line_1}, ${address.post_town}, ${address.postcode}`,
-          address: address
-        }));
-        setAddressSuggestions(formattedResults);
-        setShowSuggestions(true);
-      }
-    } catch (error) {
-      console.error("Postcode search error:", error);
-    }
-  };
-
-  // Fallback to OpenStreetMap if Ideal Postcodes fails
-  const fallbackSearchAddresses = async (query) => {
     try {
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
           query
-        )}&countrycodes=gb&addressdetails=1&limit=5`,
+        )}&countrycodes=gb&addressdetails=1&limit=5&viewbox=-10,50,2,60`,
         {
           headers: {
             "Accept-Language": "en",
-            "User-Agent": "YourAppName/1.0 (your@email.com)",
+            "User-Agent":
+              "YourAppName/1.0 (your@email.com)", // Required by Nominatim
           },
         }
       );
@@ -238,63 +201,61 @@ export default function WarrantyPage() {
       if (data && data.length > 0) {
         setAddressSuggestions(data);
         setShowSuggestions(true);
+      } else {
+        setAddressSuggestions([]);
+        setShowSuggestions(false);
       }
-    } catch (error) {
-      console.error("Fallback address search error:", error);
+    } catch (err) {
+      console.error("Address search error:", err);
+      setAddressSuggestions([]);
+      setShowSuggestions(false);
+    } finally {
+      setIsSearching(false);
     }
   };
 
-  // Handle address selection - UPDATED for Ideal Postcodes
-  const handleSelectAddress = async (suggestion) => {
-    // If using Ideal Postcodes format
-    if (suggestion.address && suggestion.address.line_1) {
-      const address = suggestion.address;
-      
-      // Update address fields
-      setAddressFields({
-        line_1: address.line_1 || "",
-        line_2: address.line_2 || "",
-        line_3: address.line_3 || "",
-        post_town: address.post_town || "",
-        postcode: address.postcode || "",
-        country: "United Kingdom", // Always UK for Ideal Postcodes
-      });
-    } 
-    // If it's an Ideal Postcodes result with ID, fetch full address details
-    else if (suggestion.id) {
-      try {
-        const response = await fetch(
-          `https://api.ideal-postcodes.co.uk/v1/udprn/${suggestion.id}?api_key=${IDEAL_POSTCODES_API_KEY}`
-        );
-        const data = await response.json();
-        
-        if (data.result) {
-          const address = data.result;
-          setAddressFields({
-            line_1: address.line_1 || "",
-            line_2: address.line_2 || "",
-            line_3: address.line_3 || "",
-            post_town: address.post_town || "",
-            postcode: address.postcode || "",
-            country: "United Kingdom",
-          });
-        }
-      } catch (error) {
-        console.error("Error fetching full address:", error);
+  // Handle address selection
+  const handleSelectAddress = (suggestion) => {
+    const address = suggestion.address;
+
+    // Extract address components from OpenStreetMap response
+    let street = "";
+    let town = "";
+    let country = "";
+    let postalCode = "";
+
+    // Build street address
+    if (address.road) {
+      street = address.road;
+      if (address.house_number) {
+        street += ` ${address.house_number}`;
       }
+    } else if (address.pedestrian) {
+      street = address.pedestrian;
     }
-    // Fallback for OpenStreetMap format
-    else if (suggestion.display_name) {
-      const address = suggestion.address || {};
-      setAddressFields({
-        line_1: `${address.road || ""} ${address.house_number || ""}`.trim(),
-        line_2: "",
-        line_3: "",
-        post_town: address.city || address.town || address.village || "",
-        postcode: address.postcode || "",
-        country: address.country || "United Kingdom",
-      });
-    }
+
+    // Get town/city (prioritize in this order)
+    town =
+      address.city ||
+      address.town ||
+      address.village ||
+      address.municipality ||
+      address.county ||
+      "";
+
+    // Get country
+    country = address.country || "";
+
+    // Get postal code
+    postalCode = address.postcode || "";
+
+    // Update address fields
+    setAddressFields({
+      street: street || "",
+      town: town || "",
+      country: country || "",
+      postal_code: postalCode || "",
+    });
 
     // Clear search and suggestions
     setAddressSearch("");
@@ -344,6 +305,7 @@ export default function WarrantyPage() {
       return false;
     }
 
+    // Remove non-digits for validation
     const digitsOnly = phoneNumber.replace(/\D/g, "");
 
     if (digitsOnly.length < 7) {
@@ -362,9 +324,11 @@ export default function WarrantyPage() {
 
   // Handle phone number input change
   const handlePhoneNumberChange = (value) => {
+    // Allow only numbers, spaces, dashes, and parentheses
     const cleaned = value.replace(/[^\d\s\-\(\)]/g, "");
     setPhoneNumber(cleaned);
 
+    // Validate as user types
     if (cleaned) {
       const digitsOnly = cleaned.replace(/\D/g, "");
       if (digitsOnly.length < 7) {
@@ -379,8 +343,134 @@ export default function WarrantyPage() {
     }
   };
 
-  // Your existing functions (sendOTP, verifyOTP, submit) remain the same...
-  // [Keep all your existing handleSendOtp, handleVerifyOtp, handleSubmit functions exactly as they are]
+  // Your existing functions
+  async function handleSendOtp(e) {
+    e.preventDefault();
+    setStatusType(null);
+    setStatus("Sending OTP...");
+    try {
+      const res = await fetch("/api/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setOtpToken(data.token);
+        setOtpSent(true);
+        setStatus("OTP sent. Check your email.");
+        setStatusType("success");
+      } else {
+        setStatus(data.error || "Failed to send OTP.");
+        setStatusType("error");
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus("Failed to send OTP.");
+      setStatusType("error");
+    }
+  }
+
+  async function handleVerifyOtp(e) {
+    e.preventDefault();
+    setStatusType(null);
+    setStatus("Verifying OTP...");
+    try {
+      const res = await fetch("/api/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp, token: otpToken }),
+      });
+      const data = await res.json();
+      if (res.ok && data.verified) {
+        setEmailVerified(true);
+        setStatus("Email verified.");
+        setStatusType("success");
+        setOtpSent(false);
+      } else {
+        setStatus(data.error || "Invalid OTP.");
+        setStatusType("error");
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus("Failed to verify OTP.");
+      setStatusType("error");
+    }
+  }
+
+  function handleEditEmail() {
+    setEmailVerified(false);
+    setOtpSent(false);
+    setOtpToken(null);
+    setOtp("");
+    setStatus(null);
+    setStatusType(null);
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+
+    // Validate email verification
+    if (!emailVerified) {
+      setStatus("Please verify your email first.");
+      setStatusType("error");
+      return;
+    }
+
+    // Validate phone number
+    if (!validatePhoneNumber()) {
+      setStatus("Please enter a valid phone number.");
+      setStatusType("error");
+      return;
+    }
+
+    const formData = new FormData(e.currentTarget);
+    const body = Object.fromEntries(formData.entries());
+
+    // Remove the old single phone field if it exists
+    delete body.phone;
+    delete body.phone_country_code;
+
+    // Combine country code and phone number
+    const fullPhone = `${phoneCountryCode}${phoneNumber.replace(/\D/g, "")}`;
+    body.phone = fullPhone;
+
+    body.email = email;
+    body.otpToken = otpToken;
+
+    // Add address fields to the submission
+    Object.assign(body, addressFields);
+
+    const selectedProduct = products.find((p) => p.id === body.product_id);
+    if (selectedProduct) {
+      body.product_title = selectedProduct.title;
+    }
+
+    setStatusType(null);
+    setStatus("Submitting warranty...");
+    try {
+      const res = await fetch("/api/submit-warranty", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setStatus("Warranty submitted successfully.");
+        setStatusType("success");
+        setTimeout(() => {
+          window.location.href = "/thankyou";
+        }, 1000);
+      } else {
+        setStatus(data.error || "Failed to submit warranty.");
+        setStatusType("error");
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus("Failed to submit warranty.");
+      setStatusType("error");
+    }
+  }
 
   return (
     <main className="warranty-page">
@@ -481,7 +571,7 @@ export default function WarrantyPage() {
             unsubscribe at any time.
           </p>
 
-          {/* Phone Number Section */}
+          {/* Phone Number Section - Updated to match your form style */}
           <div className="warranty-field fulllwwidth phone98008008">
             <label htmlFor="phone" className="phone-sub-label">
               Phone Number
@@ -525,20 +615,25 @@ export default function WarrantyPage() {
               placeholder="123 456 7890"
               required
             />
+            {/* If you want to show phone error: 
+            {phoneError && (
+              <div className="phone-error">
+                {phoneError}
+              </div>
+            )} */}
           
                     </div>
-
-          {/* Address Search with Autocomplete - UPDATED */}
+          {/* Address Search with Autocomplete */}
           <div className="postal-address-search">
             <div className="warranty-field">
-              <label htmlFor="search_address">Search UK Address</label>
+              <label htmlFor="search_address">Search Address</label>
               <div className="address-autocomplete-container">
                 <input
                   id="search_address"
                   className="warranty-input"
                   type="text"
                   value={addressSearch}
-                  placeholder="Start typing address or postcode..."
+                  placeholder="Search for your address..."
                   onChange={(e) => setAddressSearch(e.target.value)}
                   name="search_address"
                 />
@@ -557,14 +652,17 @@ export default function WarrantyPage() {
                         onClick={() => handleSelectAddress(suggestion)}
                       >
                         <div className="suggestion-main">
-                          {suggestion.display_name || 
-                           `${suggestion.line_1 || ''}, ${suggestion.post_town || ''}, ${suggestion.postcode || ''}`}
+                          {suggestion.display_name
+                            .split(",")
+                            .slice(0, 2)
+                            .join(",")}
                         </div>
-                        {suggestion.line_2 && (
-                          <div className="suggestion-details">
-                            {suggestion.line_2}
-                          </div>
-                        )}
+                        <div className="suggestion-details">
+                          {suggestion.display_name
+                            .split(",")
+                            .slice(2, 4)
+                            .join(",")}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -588,72 +686,32 @@ export default function WarrantyPage() {
             </div>
           </div>
 
-          {/* Address Fields - UPDATED field names */}
+          {/* Address Fields - Auto-filled from search */}
           <div className="warranty-field">
-            <label htmlFor="line_1">Address Line 1</label>
+            <label htmlFor="street">Street Address</label>
             <input
-              id="line_1"
+              id="street"
               className="warranty-input"
               type="text"
-              name="line_1"
+              name="street"
               required
-              value={addressFields.line_1}
-              placeholder="House number and street"
-              onChange={(e) => handleAddressFieldChange("line_1", e.target.value)}
+              value={addressFields.street}
+              placeholder="Street Address"
+              onChange={(e) => handleAddressFieldChange("street", e.target.value)}
             />
           </div>
 
           <div className="warranty-field">
-            <label htmlFor="line_2">Address Line 2 (Optional)</label>
+            <label htmlFor="town">Town / City</label>
             <input
-              id="line_2"
+              id="town"
               className="warranty-input"
               type="text"
-              name="line_2"
-              value={addressFields.line_2}
-              placeholder="Apartment, suite, building"
-              onChange={(e) => handleAddressFieldChange("line_2", e.target.value)}
-            />
-          </div>
-
-          <div className="warranty-field">
-            <label htmlFor="line_3">Address Line 3 (Optional)</label>
-            <input
-              id="line_3"
-              className="warranty-input"
-              type="text"
-              name="line_3"
-              value={addressFields.line_3}
-              placeholder="Additional address info"
-              onChange={(e) => handleAddressFieldChange("line_3", e.target.value)}
-            />
-          </div>
-
-          <div className="warranty-field">
-            <label htmlFor="post_town">Town / City</label>
-            <input
-              id="post_town"
-              className="warranty-input"
-              type="text"
-              name="post_town"
+              name="town"
               required
-              value={addressFields.post_town}
+              value={addressFields.town}
               placeholder="Town / City"
-              onChange={(e) => handleAddressFieldChange("post_town", e.target.value)}
-            />
-          </div>
-
-          <div className="warranty-field">
-            <label htmlFor="postcode">Postcode</label>
-            <input
-              id="postcode"
-              className="warranty-input"
-              type="text"
-              name="postcode"
-              required
-              value={addressFields.postcode}
-              placeholder="Postcode"
-              onChange={(e) => handleAddressFieldChange("postcode", e.target.value)}
+              onChange={(e) => handleAddressFieldChange("town", e.target.value)}
             />
           </div>
 
@@ -668,11 +726,25 @@ export default function WarrantyPage() {
               value={addressFields.country}
               placeholder="Country"
               onChange={(e) => handleAddressFieldChange("country", e.target.value)}
-              disabled // Usually disabled as Ideal Postcodes is UK-only
             />
           </div>
 
-          {/* Rest of your form remains the same... */}
+          <div className="warranty-field">
+            <label htmlFor="postal_code">Postal Code</label>
+            <input
+              id="postal_code"
+              className="warranty-input"
+              type="text"
+              name="postal_code"
+              required
+              value={addressFields.postal_code}
+              placeholder="Postal Code"
+              onChange={(e) =>
+                handleAddressFieldChange("postal_code", e.target.value)
+              }
+            />
+          </div>
+
           <div className="warranty-field labelupper908">
             <label htmlFor="purchase_source">Purchase Source</label>
             <select
@@ -712,10 +784,11 @@ export default function WarrantyPage() {
             />
           </div>
 
-          {/* Product typeahead field */}
+          {/* NEW: Product typeahead field */}
           <div className="warranty-field product-typeahead">
             <label htmlFor="product_search">Product</label>
 
+            {/* Visible typeable input */}
             <input
               id="product_search"
               className="warranty-input"
@@ -741,6 +814,7 @@ export default function WarrantyPage() {
               autoComplete="off"
             />
 
+            {/* Hidden input that actually submits product_id */}
             <input
               type="hidden"
               name="product_id"
@@ -748,6 +822,7 @@ export default function WarrantyPage() {
               required
             />
 
+            {/* Dropdown of matching products */}
             {showProductDropdown && !productsLoading && !productsError && (
               <div className="product-dropdown">
                 {filteredProducts.length === 0 ? (
