@@ -576,7 +576,7 @@ export default function WarrantyPage() {
             <label htmlFor="phone" className="phone-sub-label">
               Phone Number
             </label>
-            <div className="country-code-wrapper">
+           
               <select
                 id="phone_country_code"
                 className="warranty-select"
@@ -602,7 +602,7 @@ export default function WarrantyPage() {
                   </>
                 )}
               </select>
-            </div>
+            
           
           
             
