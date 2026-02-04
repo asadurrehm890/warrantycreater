@@ -541,9 +541,6 @@ export default function WarrantyPage() {
           {/* Phone Number Section - Updated to match your form style */}
           <div className="warranty-field">
             
-            
-              
-                <div className="country-code-field">
                   <label htmlFor="phone_country_code" className="phone-sub-label">Country Code</label>
                   <div className="country-code-wrapper">
                     <select
@@ -567,10 +564,10 @@ export default function WarrantyPage() {
                       )}
                     </select>
                   </div>
-                </div>
+                
             </div>    
             <div className="warranty-field">
-                <div className="phone-number-field">
+                
                   <label htmlFor="phone" className="phone-sub-label">Phone Number</label>
                   <input
                     id="phone"
@@ -581,7 +578,7 @@ export default function WarrantyPage() {
                     placeholder="123 456 7890"
                     required
                   />
-                </div>
+                
               
               
               {/* Display preview of full phone number 
