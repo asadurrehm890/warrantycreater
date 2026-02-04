@@ -372,11 +372,11 @@ async function updateCustomerEmailMarketingConsent(session, customerId) {
       customerEmailMarketingConsentUpdate(input: $input) {
         customer {
           id
-          emailAddress {
+          defaultEmailAddress {
             emailAddress
             marketingState
             marketingOptInLevel
-            consentUpdatedAt
+            marketingUpdatedAt
           }
         }
         userErrors {
@@ -413,7 +413,10 @@ async function updateCustomerEmailMarketingConsent(session, customerId) {
     res.data.customerEmailMarketingConsentUpdate.userErrors;
 
   if (userErrors && userErrors.length > 0) {
-    console.error("customerEmailMarketingConsentUpdate userErrors", userErrors);
+    console.error(
+      "customerEmailMarketingConsentUpdate userErrors",
+      userErrors
+    );
     return {
       ok: false,
       error: `customerEmailMarketingConsentUpdate errors: ${JSON.stringify(
