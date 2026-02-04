@@ -337,7 +337,14 @@
 .postal-address-search .warranty-actions {
   margin-top: 10px !important;
 }
-
+@media (min-width:768px){
+  .postal-address-search .warranty-actions {
+    margin-top: 0px !important;
+    position: absolute;
+    top: 0;
+    right: 0;
+  }
+}
 /* Remove the "required" styling from search input if you want */
 .postal-address-search input[required] {
   border-color: #ddd;
