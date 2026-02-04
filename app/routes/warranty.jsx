@@ -283,7 +283,7 @@ export default function WarrantyPage() {
       <p className="paragraph">Please provide your personal and order details to activate your product warranty.</p>
       {/* Customer Information Section */}
       <section className="warranty-section">
-        <h2>Personal Information</h2>
+      
         <form className="warranty-form" onSubmit={handleSubmit}>
           <div className="warranty-field fulllwwidth">
             <label htmlFor="full_name">Full Name</label>
@@ -498,8 +498,6 @@ export default function WarrantyPage() {
               onChange={(e) => handleAddressFieldChange('postal_code', e.target.value)}
             />
           </div>
-
-          <h2>Order Details</h2>
 
           <div className="warranty-field labelupper908">
             <label htmlFor="purchase_source">Purchase Source</label>
