@@ -378,4 +378,6 @@
   text-decoration: none;;
 }
 
-
+#phone_country_code{
+  width: 100% !important;
+}
