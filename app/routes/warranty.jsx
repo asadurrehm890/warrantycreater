@@ -572,12 +572,9 @@ export default function WarrantyPage() {
           </p>
 
           {/* Phone Number Section - Updated to match your form style */}
-          <div className="warranty-field">
-            <label
-              htmlFor="phone_country_code"
-              className="phone-sub-label"
-            >
-              Country Code
+          <div className="warranty-field fulllwwidth">
+            <label htmlFor="phone" className="phone-sub-label">
+              Phone Number
             </label>
             <div className="country-code-wrapper">
               <select
@@ -606,11 +603,9 @@ export default function WarrantyPage() {
                 )}
               </select>
             </div>
-          </div>
-          <div className="warranty-field">
-            <label htmlFor="phone" className="phone-sub-label">
-              Phone Number
-            </label>
+          
+          
+            
             <input
               id="phone"
               className="warranty-input"
@@ -626,8 +621,8 @@ export default function WarrantyPage() {
                 {phoneError}
               </div>
             )} */}
-          </div>
-
+          
+                    </div>
           {/* Address Search with Autocomplete */}
           <div className="postal-address-search">
             <div className="warranty-field">
