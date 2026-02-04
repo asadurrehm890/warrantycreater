@@ -97,7 +97,7 @@
 }
 .flexpara{
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 1rem;
   font-size: 0.75rem;
 }
@@ -264,7 +264,6 @@
 /* Address Autocomplete Styles */
 .postal-address-search {
   position: relative;
-  margin-bottom: 20px;
   grid-column: span 2;
 }
 

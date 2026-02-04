@@ -18,6 +18,8 @@ export async function action({ request }) {
   const country = String(body.country || "").trim();
   const postalCode = String(body.postal_code || "").trim();
 
+  const marketingConsentGiven = Boolean(body.termsformarketing);
+
   const purchaseSource = String(body.purchase_source || "").trim();
   const purchaseDate = String(body.purchase_date || "").trim();
   const orderNumber = String(body.order_number || "").trim();
@@ -116,6 +118,25 @@ export async function action({ request }) {
       headers: { "Content-Type": "application/json" },
     });
   }
+
+
+  if (marketingConsentGiven) {
+  const marketingRes = await updateCustomerEmailMarketingConsent(
+    session,
+    customerId
+  );
+
+  if (!marketingRes.ok) {
+    // You can choose to log and continue, or fail the whole request.
+    // Here we log but don't block warranty creation:
+    console.error("Failed to update email marketing consent", marketingRes.error);
+    // If you DO want to fail:
+    // return new Response(JSON.stringify({ error: marketingRes.error }), {
+    //   status: 500,
+    //   headers: { "Content-Type": "application/json" },
+    // });
+  }
+}
 
   return new Response(JSON.stringify({ success: true }), {
     status: 200,
@@ -339,6 +360,67 @@ async function createWarrantyMetaobject(session, input) {
 
   return { ok: true, metaobjectId };
 }
+
+
+// Updates the customer's email marketing consent to SUBSCRIBED
+async function updateCustomerEmailMarketingConsent(session, customerId) {
+  const mutation = `#graphql
+    mutation CustomerEmailMarketingConsentSubscribe(
+      $input: CustomerEmailMarketingConsentUpdateInput!
+    ) {
+      customerEmailMarketingConsentUpdate(input: $input) {
+        customer {
+          id
+        }
+        userErrors {
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  const nowIso = new Date().toISOString();
+
+  const res = await callAdminGraphQL(session, mutation, {
+    input: {
+      customerId,
+      emailMarketingConsent: {
+        marketingState: "SUBSCRIBED",
+        marketingOptInLevel: "SINGLE_OPT_IN",
+        consentCollectedFrom: "OTHER",
+        consentUpdatedAt: nowIso,
+      },
+    },
+  });
+
+  if (!res.ok) {
+    return {
+      ok: false,
+      error: `customerEmailMarketingConsentUpdate failed: ${res.error}`,
+    };
+  }
+
+  const userErrors =
+    res.data &&
+    res.data.customerEmailMarketingConsentUpdate &&
+    res.data.customerEmailMarketingConsentUpdate.userErrors;
+
+  if (userErrors && userErrors.length > 0) {
+    console.error("customerEmailMarketingConsentUpdate userErrors", userErrors);
+    return {
+      ok: false,
+      error: `customerEmailMarketingConsentUpdate errors: ${JSON.stringify(
+        userErrors
+      )}`,
+    };
+  }
+
+  return { ok: true };
+}
+
+
+
 
 // Link the warranty_activation_details metaobject to the Customer via a metafield
 // Definition: Customer metafield custom.warranty_activation_details
