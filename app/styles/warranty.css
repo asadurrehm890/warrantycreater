@@ -377,3 +377,101 @@
   color:#0b61cd;
   text-decoration: none;;
 }
+
+
+/* Phone Number Input Group */
+.phone-number-section {
+  margin-bottom: 1.5rem;
+}
+
+.phone-number-section label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.phone-input-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.country-code-selector {
+  flex: 0 0 auto;
+}
+
+.phone-country-code {
+  min-width: 180px;
+  padding: 12px;
+  height: 48px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+  background-color: white;
+  cursor: pointer;
+}
+
+.phone-country-code option {
+  padding: 8px;
+  font-size: 14px;
+}
+
+.phone-country-code:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.phone-number-input {
+  flex: 1;
+}
+
+.phone-number-input input {
+  width: 100%;
+  height: 48px;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.phone-preview {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #666;
+  padding: 6px 12px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  border-left: 3px solid #007bff;
+}
+
+.phone-error {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #dc3545;
+  padding: 6px 12px;
+  background-color: #f8d7da;
+  border-radius: 4px;
+  border-left: 3px solid #dc3545;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .phone-input-group {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .country-code-selector {
+    width: 100%;
+  }
+  
+  .phone-country-code {
+    width: 100%;
+    min-width: unset;
+  }
+  
+  .phone-number-input {
+    width: 100%;
+  }
+}
