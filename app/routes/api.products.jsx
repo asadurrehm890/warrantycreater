@@ -106,7 +106,7 @@ export async function loader({ request }) {
   // Call Admin GraphQL with offline session
   const productsRes = await callAdminGraphQL(session, PRODUCTS_QUERY, {
     first: 50, // adjust as you like
-    query: "vendor:mobitel",
+    query: 'vendor:mobitel tag:"Tempered Glass"',
   });
 
   if (!productsRes.ok) {
