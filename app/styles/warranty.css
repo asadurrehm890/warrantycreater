@@ -83,7 +83,6 @@
 }
 
 .warranty-field {
-
    display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -100,6 +99,26 @@
     top: 1.35rem;
     display:none;
 }
+
+/* Phone number sub-labels */
+.phone-sub-label {
+  display: block !important;
+  font-size: 0.65rem !important;
+  position: relative !important;
+  top: 0 !important;
+  left: 0 !important;
+  margin-bottom: 0.25rem;
+  color: #666;
+  font-weight: 500;
+}
+
+/* Hide sub-label animation on focus */
+.phone-sub-label-field:focus-within .phone-sub-label {
+  animation: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
 .flexpara{
   display: flex;
   align-items: center;
@@ -200,8 +219,6 @@
   color: #15803d;
 }
 
-
-
 /* Verification success message */
 .verification-success {
   background-color: #d4edda;
@@ -271,6 +288,129 @@
   grid-column: span 2;
 }
 
+/* Phone Field Container */
+.phone-field-container {
+  width: 100%;
+}
+
+.phone-field-group {
+  display: flex;
+  gap: 15px;
+  align-items: flex-end;
+}
+
+.country-code-field,
+.phone-number-field {
+  flex: 1;
+  position: relative;
+}
+
+/* Hide the main label for phone field */
+.warranty-field:has(.phone-field-group) label {
+  display: none !important;
+}
+
+/* Country Code Selector */
+.country-code-wrapper {
+  position: relative;
+}
+
+.country-code-wrapper select {
+  width: 100%;
+  padding: 1.5rem 1rem 1.2rem 1rem !important;
+  border-radius: 4px;
+  border: 1px solid rgba(23,23,23,0.025) !important;
+  font-size: .95rem !important;
+  background-color: rgba(23,23,23,0.025) !important;
+  color: #232323 !important;
+  font-family: "Inter", sans-serif !important;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 15px center !important;
+  background-size: 16px !important;
+  padding-right: 40px !important;
+}
+
+.country-code-wrapper select:focus {
+  outline: none;
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 1px #2563eb33 !important;
+}
+
+.country-code-wrapper select option {
+  padding: 10px;
+  font-size: 14px;
+  background-color: white;
+  color: #232323;
+}
+
+.country-code-wrapper select:disabled {
+  background-color: rgba(23,23,23,0.05) !important;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Phone Number Input */
+.phone-number-field input {
+  width: 100%;
+  padding: 1.5rem 1rem 1.2rem 1rem !important;
+  border-radius: 4px;
+  border: 1px solid rgba(23,23,23,0.025) !important;
+  font-size: .95rem !important;
+  background-color: rgba(23,23,23,0.025) !important;
+  color: #232323 !important;
+  font-family: "Inter", sans-serif !important;
+}
+
+.phone-number-field input:focus {
+  outline: none;
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 1px #2563eb33 !important;
+}
+
+/* Phone Preview */
+.phone-preview {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: #666;
+  padding: 6px 12px;
+  background-color: rgba(23,23,23,0.025);
+  border-radius: 4px;
+  border-left: 3px solid #2563eb;
+}
+
+.phone-error {
+  margin-top: 8px;
+  font-size: 0.75rem;
+  color: #b91c1c;
+  padding: 6px 12px;
+  background-color: rgba(185, 28, 28, 0.05);
+  border-radius: 4px;
+  border-left: 3px solid #b91c1c;
+}
+
+/* Responsive adjustments for phone fields */
+@media (max-width: 768px) {
+  .phone-field-group {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .country-code-field,
+  .phone-number-field {
+    width: 100%;
+  }
+  
+  .phone-preview,
+  .phone-error {
+    font-size: 0.7rem;
+    padding: 5px 10px;
+  }
+}
 
 /* Address Autocomplete Styles */
 .postal-address-search {
@@ -378,4 +518,13 @@
   text-decoration: none;;
 }
 
-
+/* Hide floating label animation for phone sub-labels */
+.country-code-field:focus-within label,
+.phone-number-field:focus-within label {
+  animation: none !important;
+  transform: none !important;
+  position: relative !important;
+  top: 0 !important;
+  left: 0 !important;
+  display: block !important;
+}
