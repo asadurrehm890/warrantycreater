@@ -196,29 +196,44 @@ export default function WarrantyPage() {
       );
 
       const data = await response.json();
+      console.log("Ideal Postcodes API Response:", data); // Debug log
 
       if (data.result && data.result.hits && data.result.hits.length > 0) {
         // Format Ideal Postcodes results to match your existing structure
         const formattedSuggestions = data.result.hits.map((hit) => {
-          const address = hit;
+          // Parse the suggestion string to extract components
+          const suggestionParts = hit.suggestion.split(', ');
+          let street = suggestionParts[0] || '';
+          let town = suggestionParts[2] || '';
+          let postalCode = suggestionParts[3] || '';
+          
+          // If we have more parts, adjust
+          if (suggestionParts.length > 4) {
+            street = suggestionParts.slice(0, 2).join(', ');
+            town = suggestionParts[2] || '';
+            postalCode = suggestionParts[3] || '';
+          }
+          
           return {
-            display_name: `${address.line_1 || ''}, ${address.post_town || ''}, ${address.postcode || ''}`,
+            display_name: hit.suggestion,
             address: {
-              road: address.line_1 || '',
+              road: street,
               house_number: '',
-              city: address.post_town || '',
-              town: address.post_town || '',
+              city: town,
+              town: town,
               country: "United Kingdom",
-              postcode: address.postcode || '',
-              // Store the full address object for later use
-              full_address: address
+              postcode: postalCode,
+              // Store the full hit object for later use
+              ideal_postcodes_hit: hit
             }
           };
         });
         
+        console.log("Formatted suggestions:", formattedSuggestions); // Debug log
         setAddressSuggestions(formattedSuggestions);
         setShowSuggestions(true);
       } else {
+        console.log("No results from Ideal Postcodes, trying OpenStreetMap");
         // If no results from Ideal Postcodes, try OpenStreetMap as fallback
         await searchOpenStreetMap(query);
       }
@@ -263,7 +278,7 @@ export default function WarrantyPage() {
   };
 
   // Handle address selection - UPDATED to handle both Ideal Postcodes and OpenStreetMap formats
-  const handleSelectAddress = (suggestion) => {
+  const handleSelectAddress = async (suggestion) => {
     const address = suggestion.address;
     
     let street = "";
@@ -272,16 +287,43 @@ export default function WarrantyPage() {
     let postalCode = "";
 
     // Check if it's an Ideal Postcodes result
-    if (address.full_address) {
-      const idealAddress = address.full_address;
-      // Build street address from Ideal Postcodes format
-      street = idealAddress.line_1 || "";
-      if (idealAddress.line_2) {
-        street += `, ${idealAddress.line_2}`;
+    if (address.ideal_postcodes_hit) {
+      const hit = address.ideal_postcodes_hit;
+      
+      // We need to fetch the full address details using udprn
+      try {
+        const udprn = hit.udprn;
+        const response = await fetch(
+          `https://api.ideal-postcodes.co.uk/v1/udprn/${udprn}?api_key=${IDEAL_POSTCODES_API_KEY}`
+        );
+        const data = await response.json();
+        
+        if (data.result) {
+          const fullAddress = data.result;
+          street = fullAddress.line_1 || "";
+          if (fullAddress.line_2) {
+            street += `, ${fullAddress.line_2}`;
+          }
+          town = fullAddress.post_town || "";
+          country = "United Kingdom";
+          postalCode = fullAddress.postcode || "";
+        } else {
+          // If we can't get full details, parse from suggestion
+          const suggestionParts = hit.suggestion.split(', ');
+          street = suggestionParts[0] || '';
+          town = suggestionParts[2] || '';
+          postalCode = suggestionParts[3] || '';
+          country = "United Kingdom";
+        }
+      } catch (error) {
+        console.error("Error fetching full address details:", error);
+        // Fallback to parsing suggestion
+        const suggestionParts = hit.suggestion.split(', ');
+        street = suggestionParts[0] || '';
+        town = suggestionParts[2] || '';
+        postalCode = suggestionParts[3] || '';
+        country = "United Kingdom";
       }
-      town = idealAddress.post_town || "";
-      country = "United Kingdom";
-      postalCode = idealAddress.postcode || "";
     } else {
       // OpenStreetMap format (original logic)
       // Build street address
@@ -714,13 +756,13 @@ export default function WarrantyPage() {
                       >
                         <div className="suggestion-main">
                           {suggestion.display_name
-                            ? suggestion.display_name.split(",").slice(0, 2).join(",")
+                            ? suggestion.display_name.split(",")[0]
                             : "Address"}
                         </div>
                         <div className="suggestion-details">
                           {suggestion.display_name
-                            ? suggestion.display_name.split(",").slice(2, 4).join(",")
-                            : suggestion.address.postcode || ""}
+                            ? suggestion.display_name.split(",").slice(1).join(",").trim()
+                            : ""}
                         </div>
                       </div>
                     ))}
