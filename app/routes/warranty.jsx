@@ -65,7 +65,7 @@ export default function WarrantyPage() {
   ];
 
   // Ideal Postcodes API Key - Replace with your actual key
-  const IDEAL_POSTCODES_API_KEY = "ak_test"; // Get from https://ideal-postcodes.co.uk/
+  const IDEAL_POSTCODES_API_KEY = "your_api_key_here"; // Get from https://ideal-postcodes.co.uk/
 
   // Fetch countries from better API
   useEffect(() => {
@@ -379,8 +379,140 @@ export default function WarrantyPage() {
     }
   };
 
-  // Your existing functions (sendOTP, verifyOTP, submit) remain the same...
-  // [Keep all your existing handleSendOtp, handleVerifyOtp, handleSubmit functions exactly as they are]
+  // ADD YOUR EXISTING FUNCTIONS HERE - I noticed they were missing
+  async function handleSendOtp(e) {
+    e.preventDefault();
+    setStatusType(null);
+    setStatus("Sending OTP...");
+    try {
+      const res = await fetch("/api/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setOtpToken(data.token);
+        setOtpSent(true);
+        setStatus("OTP sent. Check your email.");
+        setStatusType("success");
+      } else {
+        setStatus(data.error || "Failed to send OTP.");
+        setStatusType("error");
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus("Failed to send OTP.");
+      setStatusType("error");
+    }
+  }
+
+  async function handleVerifyOtp(e) {
+    e.preventDefault();
+    setStatusType(null);
+    setStatus("Verifying OTP...");
+    try {
+      const res = await fetch("/api/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp, token: otpToken }),
+      });
+      const data = await res.json();
+      if (res.ok && data.verified) {
+        setEmailVerified(true);
+        setStatus("Email verified.");
+        setStatusType("success");
+        setOtpSent(false);
+      } else {
+        setStatus(data.error || "Invalid OTP.");
+        setStatusType("error");
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus("Failed to verify OTP.");
+      setStatusType("error");
+    }
+  }
+
+  function handleEditEmail() {
+    setEmailVerified(false);
+    setOtpSent(false);
+    setOtpToken(null);
+    setOtp("");
+    setStatus(null);
+    setStatusType(null);
+  }
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+
+    // Validate email verification
+    if (!emailVerified) {
+      setStatus("Please verify your email first.");
+      setStatusType("error");
+      return;
+    }
+
+    // Validate phone number
+    if (!validatePhoneNumber()) {
+      setStatus("Please enter a valid phone number.");
+      setStatusType("error");
+      return;
+    }
+
+    const formData = new FormData(e.currentTarget);
+    const body = Object.fromEntries(formData.entries());
+
+    // Remove the old single phone field if it exists
+    delete body.phone;
+    delete body.phone_country_code;
+
+    // Combine country code and phone number
+    const fullPhone = `${phoneCountryCode}${phoneNumber.replace(/\D/g, "")}`;
+    body.phone = fullPhone;
+
+    body.email = email;
+    body.otpToken = otpToken;
+
+    // Add address fields to the submission - UPDATED field names
+    Object.assign(body, addressFields);
+
+    // Map old address field names to new ones for backward compatibility
+    body.street = addressFields.line_1;
+    body.town = addressFields.post_town;
+    body.country = addressFields.country;
+    body.postal_code = addressFields.postcode;
+
+    const selectedProduct = products.find((p) => p.id === body.product_id);
+    if (selectedProduct) {
+      body.product_title = selectedProduct.title;
+    }
+
+    setStatusType(null);
+    setStatus("Submitting warranty...");
+    try {
+      const res = await fetch("/api/submit-warranty", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setStatus("Warranty submitted successfully.");
+        setStatusType("success");
+        setTimeout(() => {
+          window.location.href = "/thankyou";
+        }, 1000);
+      } else {
+        setStatus(data.error || "Failed to submit warranty.");
+        setStatusType("error");
+      }
+    } catch (err) {
+      console.error(err);
+      setStatus("Failed to submit warranty.");
+      setStatusType("error");
+    }
+  }
 
   return (
     <main className="warranty-page">
@@ -478,8 +610,8 @@ export default function WarrantyPage() {
             />
             I agree to receive marketing communications from Mobitel regarding
             products, services, offers, and promotions. I understand that I can
-            unsubscribe at any time.
-          </p>
+              unsubscribe at any time.
+            </p>
 
           {/* Phone Number Section */}
           <div className="warranty-field fulllwwidth phone98008008">
