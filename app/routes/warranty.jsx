@@ -63,7 +63,7 @@ export default function WarrantyPage() {
   ];
 
   // Ideal Postcodes API Key - Add this at the top with your actual key
-  const IDEAL_POSTCODES_API_KEY = "ak_iy6b8epqO8f0hK0I2cXG3IdoDABZR"; // Replace with your key from ideal-postcodes.co.uk
+  const IDEAL_POSTCODES_API_KEY = "ak_test"; // Replace with your key from ideal-postcodes.co.uk
 
   // Fetch countries from better API
   useEffect(() => {
