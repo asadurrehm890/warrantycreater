@@ -381,3 +381,34 @@
 #phone_country_code{
   width: 100% !important;
 }
+
+
+.product-typeahead {
+  position: relative;
+}
+
+.product-dropdown {
+  position: absolute;
+  z-index: 10;
+  background: #fff;
+  border: 1px solid #ddd;
+  width: 100%;
+  max-height: 250px;
+  overflow-y: auto;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.product-dropdown-item {
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.product-dropdown-item:hover,
+.product-dropdown-item.selected {
+  background-color: #f5f5f5;
+}
+
+.product-dropdown-empty {
+  color: #999;
+  cursor: default;
+}

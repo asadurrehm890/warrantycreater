@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import "../styles/warranty.css"; 
+import "../styles/warranty.css";
 
 export default function WarrantyPage() {
   const [emailVerified, setEmailVerified] = useState(false);
@@ -14,7 +14,11 @@ export default function WarrantyPage() {
   const [productsLoading, setProductsLoading] = useState(true);
   const [productsError, setProductsError] = useState(null);
   const [selectedProductId, setSelectedProductId] = useState("");
-  
+
+  // NEW: product typeahead states
+  const [productSearchTerm, setProductSearchTerm] = useState("");
+  const [showProductDropdown, setShowProductDropdown] = useState(false);
+
   // Address states
   const [addressSearch, setAddressSearch] = useState("");
   const [addressSuggestions, setAddressSuggestions] = useState([]);
@@ -24,7 +28,7 @@ export default function WarrantyPage() {
     street: "",
     town: "",
     country: "",
-    postal_code: ""
+    postal_code: "",
   });
 
   // Phone number states
@@ -64,59 +68,63 @@ export default function WarrantyPage() {
       setCountriesLoading(true);
       try {
         // Using a more reliable API for phone codes
-        const response = await fetch('https://restcountries.com/v3.1/all?fields=name,cca2,idd,flags');
+        const response = await fetch(
+          "https://restcountries.com/v3.1/all?fields=name,cca2,idd,flags"
+        );
         const data = await response.json();
-        
+
         // Process country data
         const formattedCountries = data
-          .filter(country => {
+          .filter((country) => {
             // Only include countries with phone codes
             return country.idd && country.idd.root;
           })
-          .map(country => {
+          .map((country) => {
             // Get phone code - handle different formats
             let phoneCode = country.idd.root;
-            
+
             // Some countries have suffixes
             if (country.idd.suffixes && country.idd.suffixes.length > 0) {
               // Take the first suffix (usually the main one)
-              phoneCode = phoneCode + (country.idd.suffixes[0] || '');
+              phoneCode = phoneCode + (country.idd.suffixes[0] || "");
             }
-            
+
             // Clean up the phone code
-            phoneCode = phoneCode.replace(/\s+/g, '');
-            
+            phoneCode = phoneCode.replace(/\s+/g, "");
+
             // Get flag emoji from country code
             const getFlagEmoji = (countryCode) => {
               if (!countryCode || countryCode.length !== 2) return "🏳️";
               const codePoints = countryCode
                 .toUpperCase()
-                .split('')
-                .map(char => 127397 + char.charCodeAt());
+                .split("")
+                .map((char) => 127397 + char.charCodeAt());
               return String.fromCodePoint(...codePoints);
             };
-            
+
             return {
               code: phoneCode,
               country: country.name.common,
               flag: getFlagEmoji(country.cca2),
-              isoCode: country.cca2
+              isoCode: country.cca2,
             };
           })
-          .filter(country => {
+          .filter((country) => {
             // Filter out invalid codes and duplicates
-            return country.code && 
-                   country.code !== '+' && 
-                   country.code.length > 1 &&
-                   // Filter out territories that aren't countries
-                   !country.country.includes('Island') &&
-                   !country.country.includes('Guernsey') &&
-                   !country.country.includes('Jersey') &&
-                   !country.country.includes('Isle of Man');
+            return (
+              country.code &&
+              country.code !== "+" &&
+              country.code.length > 1 &&
+              // Filter out territories that aren't countries
+              !country.country.includes("Island") &&
+              !country.country.includes("Guernsey") &&
+              !country.country.includes("Jersey") &&
+              !country.country.includes("Isle of Man")
+            );
           })
           // Sort alphabetically by country name
           .sort((a, b) => a.country.localeCompare(b.country));
-        
+
         // Set countries, default to UK as selected
         setCountries(formattedCountries);
       } catch (error) {
@@ -127,7 +135,7 @@ export default function WarrantyPage() {
         setCountriesLoading(false);
       }
     };
-    
+
     fetchCountries();
   }, []);
 
@@ -142,7 +150,7 @@ export default function WarrantyPage() {
     return () => clearTimeout(delayDebounceFn);
   }, [addressSearch]);
 
-  // Fetch products for the Product Name select
+  // Fetch products for the Product Name select (now used for typeahead)
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -166,22 +174,30 @@ export default function WarrantyPage() {
     fetchProducts();
   }, []);
 
+  // Derived: filtered products based on search term
+  const filteredProducts = products.filter((product) =>
+    product.title.toLowerCase().includes(productSearchTerm.toLowerCase())
+  );
+
   // Search addresses using OpenStreetMap Nominatim API (FREE)
   const searchAddresses = async (query) => {
     setIsSearching(true);
     try {
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=gb&addressdetails=1&limit=5&viewbox=-10,50,2,60`,
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
+          query
+        )}&countrycodes=gb&addressdetails=1&limit=5&viewbox=-10,50,2,60`,
         {
           headers: {
-            'Accept-Language': 'en',
-            'User-Agent': 'YourAppName/1.0 (your@email.com)' // Required by Nominatim
-          }
+            "Accept-Language": "en",
+            "User-Agent":
+              "YourAppName/1.0 (your@email.com)", // Required by Nominatim
+          },
         }
       );
-      
+
       const data = await response.json();
-      
+
       if (data && data.length > 0) {
         setAddressSuggestions(data);
         setShowSuggestions(true);
@@ -201,7 +217,7 @@ export default function WarrantyPage() {
   // Handle address selection
   const handleSelectAddress = (suggestion) => {
     const address = suggestion.address;
-    
+
     // Extract address components from OpenStreetMap response
     let street = "";
     let town = "";
@@ -219,12 +235,13 @@ export default function WarrantyPage() {
     }
 
     // Get town/city (prioritize in this order)
-    town = address.city || 
-           address.town || 
-           address.village || 
-           address.municipality || 
-           address.county || 
-           "";
+    town =
+      address.city ||
+      address.town ||
+      address.village ||
+      address.municipality ||
+      address.county ||
+      "";
 
     // Get country
     country = address.country || "";
@@ -237,36 +254,48 @@ export default function WarrantyPage() {
       street: street || "",
       town: town || "",
       country: country || "",
-      postal_code: postalCode || ""
+      postal_code: postalCode || "",
     });
 
     // Clear search and suggestions
     setAddressSearch("");
     setAddressSuggestions([]);
     setShowSuggestions(false);
-    
+
     setStatus("Address selected and auto-filled!");
     setStatusType("success");
   };
 
   // Handle manual changes to address fields
   const handleAddressFieldChange = (field, value) => {
-    setAddressFields(prev => ({
+    setAddressFields((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
-  // Close suggestions when clicking outside
+  // Close address suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (!e.target.closest('.postal-address-search')) {
+      if (!e.target.closest(".postal-address-search")) {
         setShowSuggestions(false);
       }
     };
 
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
+
+  // Close product dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest(".product-typeahead")) {
+        setShowProductDropdown(false);
+      }
+    };
+
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
   // Validate phone number
@@ -275,20 +304,20 @@ export default function WarrantyPage() {
       setPhoneError("Phone number is required");
       return false;
     }
-    
+
     // Remove non-digits for validation
-    const digitsOnly = phoneNumber.replace(/\D/g, '');
-    
+    const digitsOnly = phoneNumber.replace(/\D/g, "");
+
     if (digitsOnly.length < 7) {
       setPhoneError("Phone number is too short");
       return false;
     }
-    
+
     if (digitsOnly.length > 15) {
       setPhoneError("Phone number is too long");
       return false;
     }
-    
+
     setPhoneError("");
     return true;
   };
@@ -296,12 +325,12 @@ export default function WarrantyPage() {
   // Handle phone number input change
   const handlePhoneNumberChange = (value) => {
     // Allow only numbers, spaces, dashes, and parentheses
-    const cleaned = value.replace(/[^\d\s\-\(\)]/g, '');
+    const cleaned = value.replace(/[^\d\s\-\(\)]/g, "");
     setPhoneNumber(cleaned);
-    
+
     // Validate as user types
     if (cleaned) {
-      const digitsOnly = cleaned.replace(/\D/g, '');
+      const digitsOnly = cleaned.replace(/\D/g, "");
       if (digitsOnly.length < 7) {
         setPhoneError("Phone number is too short");
       } else if (digitsOnly.length > 15) {
@@ -380,14 +409,14 @@ export default function WarrantyPage() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    
+
     // Validate email verification
     if (!emailVerified) {
       setStatus("Please verify your email first.");
       setStatusType("error");
       return;
     }
-    
+
     // Validate phone number
     if (!validatePhoneNumber()) {
       setStatus("Please enter a valid phone number.");
@@ -397,22 +426,22 @@ export default function WarrantyPage() {
 
     const formData = new FormData(e.currentTarget);
     const body = Object.fromEntries(formData.entries());
-    
+
     // Remove the old single phone field if it exists
     delete body.phone;
     delete body.phone_country_code;
-    
+
     // Combine country code and phone number
-    const fullPhone = `${phoneCountryCode}${phoneNumber.replace(/\D/g, '')}`;
+    const fullPhone = `${phoneCountryCode}${phoneNumber.replace(/\D/g, "")}`;
     body.phone = fullPhone;
-    
+
     body.email = email;
     body.otpToken = otpToken;
 
     // Add address fields to the submission
     Object.assign(body, addressFields);
 
-    const selectedProduct = products.find(p => p.id === body.product_id);
+    const selectedProduct = products.find((p) => p.id === body.product_id);
     if (selectedProduct) {
       body.product_title = selectedProduct.title;
     }
@@ -430,7 +459,7 @@ export default function WarrantyPage() {
         setStatus("Warranty submitted successfully.");
         setStatusType("success");
         setTimeout(() => {
-          window.location.href="/thankyou";
+          window.location.href = "/thankyou";
         }, 1000);
       } else {
         setStatus(data.error || "Failed to submit warranty.");
@@ -446,8 +475,11 @@ export default function WarrantyPage() {
   return (
     <main className="warranty-page">
       <h1>Warranty Activation</h1>
-      <p className="paragraph">Please provide your personal and order details to activate your product warranty.</p>
-      
+      <p className="paragraph">
+        Please provide your personal and order details to activate your product
+        warranty.
+      </p>
+
       {/* Customer Information Section */}
       <section className="warranty-section">
         <form className="warranty-form" onSubmit={handleSubmit}>
@@ -462,7 +494,7 @@ export default function WarrantyPage() {
               required
             />
           </div>
-          
+
           <div className="email-verification-section fulllwwidth">
             {!emailVerified && (
               <>
@@ -482,8 +514,8 @@ export default function WarrantyPage() {
                       />
                     </div>
                     <div className="warranty-actions otp-actions">
-                      <button 
-                        className="warranty-button" 
+                      <button
+                        className="warranty-button"
                         onClick={handleSendOtp}
                         disabled={!email.trim()}
                       >
@@ -507,8 +539,8 @@ export default function WarrantyPage() {
                       />
                     </div>
                     <div className="warranty-actions otp-actions">
-                      <button 
-                        className="warranty-button secondary" 
+                      <button
+                        className="warranty-button secondary"
                         onClick={handleVerifyOtp}
                         disabled={!otp.trim()}
                       >
@@ -532,69 +564,68 @@ export default function WarrantyPage() {
               type="checkbox"
               name="termsformarketing"
               id="termsformarketing"
-              defaultChecked 
+              defaultChecked
             />
-            I agree to receive marketing communications from Mobitel regarding products,
-            services, offers, and promotions. I understand that I can unsubscribe at any time.
+            I agree to receive marketing communications from Mobitel regarding
+            products, services, offers, and promotions. I understand that I can
+            unsubscribe at any time.
           </p>
-          
+
           {/* Phone Number Section - Updated to match your form style */}
           <div className="warranty-field">
-            
-                  <label htmlFor="phone_country_code" className="phone-sub-label">Country Code</label>
-                  <div className="country-code-wrapper">
-                    <select
-                      id="phone_country_code"
-                      className="warranty-select"
-                      value={phoneCountryCode}
-                      onChange={(e) => setPhoneCountryCode(e.target.value)}
-                      disabled={countriesLoading}
-                    >
-                      {countriesLoading ? (
-                        <option value="+44">Loading countries...</option>
-                      ) : (
-                        <>
-                          <option value="" disabled>Select country</option>
-                          {countries.map((country) => (
-                            <option key={country.isoCode || country.code} value={country.code}>
-                              {country.flag} {country.country} ({country.code})
-                            </option>
-                          ))}
-                        </>
-                      )}
-                    </select>
-                  </div>
-                
-            </div>    
-            <div className="warranty-field">
-                
-                  <label htmlFor="phone" className="phone-sub-label">Phone Number</label>
-                  <input
-                    id="phone"
-                    className="warranty-input"
-                    type="tel"
-                    value={phoneNumber}
-                    onChange={(e) => handlePhoneNumberChange(e.target.value)}
-                    placeholder="123 456 7890"
-                    required
-                  />
-                
-              
-              
-              {/* Display preview of full phone number 
-              {phoneNumber && (
-                <div className="phone-preview">
-                  Full phone number: <strong>{phoneCountryCode} {phoneNumber}</strong>
-                </div>
-              )}*/}
-              
-              {/* Phone number error message 
-              {phoneError && (
-                <div className="phone-error">
-                  {phoneError}
-                </div>
-              )}*/}
-           
+            <label
+              htmlFor="phone_country_code"
+              className="phone-sub-label"
+            >
+              Country Code
+            </label>
+            <div className="country-code-wrapper">
+              <select
+                id="phone_country_code"
+                className="warranty-select"
+                value={phoneCountryCode}
+                onChange={(e) => setPhoneCountryCode(e.target.value)}
+                disabled={countriesLoading}
+              >
+                {countriesLoading ? (
+                  <option value="+44">Loading countries...</option>
+                ) : (
+                  <>
+                    <option value="" disabled>
+                      Select country
+                    </option>
+                    {countries.map((country) => (
+                      <option
+                        key={country.isoCode || country.code}
+                        value={country.code}
+                      >
+                        {country.flag} {country.country} ({country.code})
+                      </option>
+                    ))}
+                  </>
+                )}
+              </select>
+            </div>
+          </div>
+          <div className="warranty-field">
+            <label htmlFor="phone" className="phone-sub-label">
+              Phone Number
+            </label>
+            <input
+              id="phone"
+              className="warranty-input"
+              type="tel"
+              value={phoneNumber}
+              onChange={(e) => handlePhoneNumberChange(e.target.value)}
+              placeholder="123 456 7890"
+              required
+            />
+            {/* If you want to show phone error: 
+            {phoneError && (
+              <div className="phone-error">
+                {phoneError}
+              </div>
+            )} */}
           </div>
 
           {/* Address Search with Autocomplete */}
@@ -611,12 +642,14 @@ export default function WarrantyPage() {
                   onChange={(e) => setAddressSearch(e.target.value)}
                   name="search_address"
                 />
-                
+
                 {/* Suggestions Dropdown */}
                 {showSuggestions && addressSuggestions.length > 0 && (
                   <div className="address-suggestions-dropdown">
-                    {isSearching && <div className="suggestion-loading">Searching...</div>}
-                    
+                    {isSearching && (
+                      <div className="suggestion-loading">Searching...</div>
+                    )}
+
                     {addressSuggestions.map((suggestion, index) => (
                       <div
                         key={index}
@@ -624,10 +657,16 @@ export default function WarrantyPage() {
                         onClick={() => handleSelectAddress(suggestion)}
                       >
                         <div className="suggestion-main">
-                          {suggestion.display_name.split(',').slice(0, 2).join(',')}
+                          {suggestion.display_name
+                            .split(",")
+                            .slice(0, 2)
+                            .join(",")}
                         </div>
                         <div className="suggestion-details">
-                          {suggestion.display_name.split(',').slice(2, 4).join(',')}
+                          {suggestion.display_name
+                            .split(",")
+                            .slice(2, 4)
+                            .join(",")}
                         </div>
                       </div>
                     ))}
@@ -635,10 +674,10 @@ export default function WarrantyPage() {
                 )}
               </div>
             </div>
-            
+
             <div className="warranty-actions otp-actions">
-              <button 
-                className="warranty-button secondary" 
+              <button
+                className="warranty-button secondary"
                 type="button"
                 onClick={() => {
                   if (addressSearch.trim()) {
@@ -663,10 +702,10 @@ export default function WarrantyPage() {
               required
               value={addressFields.street}
               placeholder="Street Address"
-              onChange={(e) => handleAddressFieldChange('street', e.target.value)}
+              onChange={(e) => handleAddressFieldChange("street", e.target.value)}
             />
           </div>
-          
+
           <div className="warranty-field">
             <label htmlFor="town">Town / City</label>
             <input
@@ -677,10 +716,10 @@ export default function WarrantyPage() {
               required
               value={addressFields.town}
               placeholder="Town / City"
-              onChange={(e) => handleAddressFieldChange('town', e.target.value)}
+              onChange={(e) => handleAddressFieldChange("town", e.target.value)}
             />
           </div>
-          
+
           <div className="warranty-field">
             <label htmlFor="country">Country</label>
             <input
@@ -691,10 +730,10 @@ export default function WarrantyPage() {
               required
               value={addressFields.country}
               placeholder="Country"
-              onChange={(e) => handleAddressFieldChange('country', e.target.value)}
+              onChange={(e) => handleAddressFieldChange("country", e.target.value)}
             />
           </div>
-          
+
           <div className="warranty-field">
             <label htmlFor="postal_code">Postal Code</label>
             <input
@@ -705,7 +744,9 @@ export default function WarrantyPage() {
               required
               value={addressFields.postal_code}
               placeholder="Postal Code"
-              onChange={(e) => handleAddressFieldChange('postal_code', e.target.value)}
+              onChange={(e) =>
+                handleAddressFieldChange("postal_code", e.target.value)
+              }
             />
           </div>
 
@@ -748,32 +789,71 @@ export default function WarrantyPage() {
             />
           </div>
 
-          <div className="warranty-field">
-            <label htmlFor="product_id">Product</label>
-            <select
-              id="product_id"
-              className="warranty-select"
-              name="product_id"
-              required
-              value={selectedProductId}
-              onChange={(e) => setSelectedProductId(e.target.value)}
-              disabled={productsLoading || !!productsError}
-            >
-              <option value="">
-                {productsLoading
+          {/* NEW: Product typeahead field */}
+          <div className="warranty-field product-typeahead">
+            <label htmlFor="product_search">Product</label>
+
+            {/* Visible typeable input */}
+            <input
+              id="product_search"
+              className="warranty-input"
+              type="text"
+              placeholder={
+                productsLoading
                   ? "Loading products..."
                   : productsError
                   ? "Failed to load products"
-                  : "Select a product"}
-              </option>
+                  : "Type to search products..."
+              }
+              value={productSearchTerm}
+              onChange={(e) => {
+                setProductSearchTerm(e.target.value);
+                setShowProductDropdown(true);
+              }}
+              onFocus={() => {
+                if (!productsLoading && !productsError) {
+                  setShowProductDropdown(true);
+                }
+              }}
+              disabled={productsLoading || !!productsError}
+              autoComplete="off"
+            />
 
-              {!productsLoading && !productsError &&
-                products.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.title}
-                  </option>
-                ))}
-            </select>
+            {/* Hidden input that actually submits product_id */}
+            <input
+              type="hidden"
+              name="product_id"
+              value={selectedProductId}
+              required
+            />
+
+            {/* Dropdown of matching products */}
+            {showProductDropdown && !productsLoading && !productsError && (
+              <div className="product-dropdown">
+                {filteredProducts.length === 0 ? (
+                  <div className="product-dropdown-item product-dropdown-empty">
+                    No products found
+                  </div>
+                ) : (
+                  filteredProducts.slice(0, 20).map((product) => (
+                    <div
+                      key={product.id}
+                      className={
+                        "product-dropdown-item" +
+                        (product.id === selectedProductId ? " selected" : "")
+                      }
+                      onClick={() => {
+                        setSelectedProductId(product.id);
+                        setProductSearchTerm(product.title);
+                        setShowProductDropdown(false);
+                      }}
+                    >
+                      {product.title}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
 
             {productsError && (
               <p className="warranty-status warranty-status--error">
@@ -804,11 +884,13 @@ export default function WarrantyPage() {
             </button>
           </div>
         </form>
-        
+
         <p className="paralast0900009">
-          By completing this form, you accept our <a href="#">Terms & Conditions</a> and acknowledge our <a href="#">Privacy Policy.</a>
+          By completing this form, you accept our{" "}
+          <a href="#">Terms & Conditions</a> and acknowledge our{" "}
+          <a href="#">Privacy Policy.</a>
         </p>
-        
+
         {status && (
           <p
             className={
