@@ -572,7 +572,7 @@ export default function WarrantyPage() {
           </p>
 
           {/* Phone Number Section - Updated to match your form style */}
-          <div className="warranty-field fulllwwidth">
+          <div className="warranty-field fulllwwidth phone98008008">
             <label htmlFor="phone" className="phone-sub-label">
               Phone Number
             </label>

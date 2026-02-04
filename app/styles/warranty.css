@@ -382,6 +382,10 @@
   width: 50% !important;
 }
 
+
+.phone98008008{
+  flex-direction:row !important;
+}
 input#phone{
   width: 100% !important;
 }
