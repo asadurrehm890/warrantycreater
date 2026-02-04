@@ -539,10 +539,10 @@ export default function WarrantyPage() {
           </p>
           
           {/* Phone Number Section - Updated to match your form style */}
-          <div className="warranty-field fulllwwidth">
-            <label htmlFor="phone">Phone Number</label>
-            <div className="phone-field-container">
-              <div className="phone-field-group">
+          <div className="warranty-field">
+            
+            
+              
                 <div className="country-code-field">
                   <label htmlFor="phone_country_code" className="phone-sub-label">Country Code</label>
                   <div className="country-code-wrapper">
@@ -568,7 +568,8 @@ export default function WarrantyPage() {
                     </select>
                   </div>
                 </div>
-                
+            </div>    
+            <div className="warranty-field">
                 <div className="phone-number-field">
                   <label htmlFor="phone" className="phone-sub-label">Phone Number</label>
                   <input
@@ -581,22 +582,22 @@ export default function WarrantyPage() {
                     required
                   />
                 </div>
-              </div>
               
-              {/* Display preview of full phone number */}
+              
+              {/* Display preview of full phone number 
               {phoneNumber && (
                 <div className="phone-preview">
                   Full phone number: <strong>{phoneCountryCode} {phoneNumber}</strong>
                 </div>
-              )}
+              )}*/}
               
-              {/* Phone number error message */}
+              {/* Phone number error message 
               {phoneError && (
                 <div className="phone-error">
                   {phoneError}
                 </div>
-              )}
-            </div>
+              )}*/}
+           
           </div>
 
           {/* Address Search with Autocomplete */}
