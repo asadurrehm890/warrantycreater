@@ -435,7 +435,7 @@ input#phone{
 }
 
 .country-code-selector {
-  flex: 0 0 150px;
+  flex: 0 0 200px;
 }
 
 .phone-country-select {
@@ -484,4 +484,11 @@ input#phone{
   .phone-country-select {
     width: 100%;
   }
+}
+
+
+.phone98008008 .country-code-selector .css-13cymwt-control{
+    height: 64px;
+    background-color: rgba(23, 23, 23, 0.025);
+    border: 1px solid rgba(23, 23, 23, 0.025);
 }
