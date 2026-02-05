@@ -1042,8 +1042,8 @@ export default function WarrantyPage() {
 
         <p className="paralast0900009">
           By completing this form, you accept our{" "}
-          <a href="#">Terms & Conditions</a> and acknowledge our{" "}
-          <a href="#">Privacy Policy.</a>
+          <a href="https://mobitel.uk/policies/terms-of-service">Terms & Conditions</a> and acknowledge our{" "}
+          <a href="https://mobitel.uk/policies/privacy-policy">Privacy Policy.</a>
         </p>
 
         {status && (
