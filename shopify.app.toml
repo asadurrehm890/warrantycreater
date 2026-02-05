@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "760a1b1a61328e30779372d9c2159b8e"
-name = "warranty-creator"
+name = "Warranty Activation"
 application_url = "https://warrantycreater-production.up.railway.app"
 embedded = true
 
