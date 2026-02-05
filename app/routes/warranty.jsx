@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "../styles/warranty.css";
+import { findFlagUrlByIso2Code } from "country-flags-svg";
 
 export default function WarrantyPage() {
   const [emailVerified, setEmailVerified] = useState(false);
@@ -721,14 +722,17 @@ export default function WarrantyPage() {
                       <option value="" disabled>
                         Select country
                       </option>
-                      {countries.map((country) => (
-                        <option
-                          key={country.isoCode || country.code}
-                          value={country.code}
-                        >
-                          {country.flag} {country.country} ({country.code})
-                        </option>
-                      ))}
+                      {countries.map((country) => {
+                        const flagUrl = findFlagUrlByIso2Code(country.isoCode);
+                        return (
+                          <option
+                            key={country.isoCode || country.code}
+                            value={country.code}
+                          >
+                            <img src={flagUrl} alt={country.country} className="country-flag" /> ({country.code})
+                          </option>
+                        );
+                      })}
                     </>
                   )}
                 </select>
