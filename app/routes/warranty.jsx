@@ -615,7 +615,7 @@ export default function WarrantyPage() {
       return (
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <img src={flagUrl} alt={label} width="20" />
-          <span>{label} ({value})</span>
+          <span>{value}</span>
         </div>
       );
     };
@@ -722,9 +722,7 @@ export default function WarrantyPage() {
 
           {/* Phone Number Section - UPDATED */}
           <div className="warranty-field fulllwwidth phone98008008">
-            <label htmlFor="phone" className="phone-sub-label">
-              Phone Number
-            </label>
+           
             
             <div className="phone-input-container">
               {/* Country Code Selector with Flags */}
