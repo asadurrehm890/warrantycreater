@@ -615,7 +615,7 @@ export default function WarrantyPage() {
       return (
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <img src={flagUrl} alt={label} width="20" />
-          <span>{value}</span>
+          <span>{label}({value})</span>
         </div>
       );
     };
