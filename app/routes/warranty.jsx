@@ -38,9 +38,6 @@ export default function WarrantyPage() {
   const [phoneError, setPhoneError] = useState("");
   const [countries, setCountries] = useState([]);
   const [countriesLoading, setCountriesLoading] = useState(false);
-  
-  // Country dropdown state
-  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
 
   // Static fallback list for countries - accurate phone codes
   const staticCountries = [
@@ -158,18 +155,6 @@ export default function WarrantyPage() {
       setPhoneNumber(phoneCountryCode);
     }
   }, [phoneCountryCode]);
-
-  // Close country dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (!e.target.closest(".country-code-selector")) {
-        setShowCountryDropdown(false);
-      }
-    };
-
-    document.addEventListener("click", handleClickOutside);
-    return () => document.removeEventListener("click", handleClickOutside);
-  }, []);
 
   // Debounce address search - UPDATED to use Ideal Postcodes
   useEffect(() => {
@@ -721,67 +706,36 @@ export default function WarrantyPage() {
             </label>
             
             <div className="phone-input-container">
-              {/* Country Code Selector with Flags - Custom Dropdown */}
+              {/* Country Code Selector with Flags */}
               <div className="country-code-selector">
-                <div className="country-select-input" onClick={() => setShowCountryDropdown(!showCountryDropdown)}>
-                  <div className="selected-country">
-                    {phoneCountryCode && (
-                      <>
-                        <img 
-                          src={findFlagUrlByIso2Code(countries.find(c => c.code === phoneCountryCode)?.isoCode)} 
-                          alt="Flag"
-                          className="country-flag"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.parentNode.querySelector('.country-emoji').style.display = 'inline';
-                          }}
-                        />
-                        <span className="country-emoji" style={{ display: 'none' }}>
-                          {countries.find(c => c.code === phoneCountryCode)?.flag || '🏳️'}
-                        </span>
-                        <span className="country-code">{phoneCountryCode}</span>
-                      </>
-                    )}
-                  </div>
-                  <span className="dropdown-arrow">▼</span>
-                </div>
-                
-                {showCountryDropdown && !countriesLoading && (
-                  <div className="country-dropdown">
-                    {countries.map((country) => {
-                      const flagUrl = findFlagUrlByIso2Code(country.isoCode);
-                      return (
-                        <div
-                          key={country.isoCode || country.code}
-                          className="country-option"
-                          onClick={() => {
-                            handleCountryCodeChange(country.code);
-                            setShowCountryDropdown(false);
-                          }}
-                        >
-                          <div className="country-option-flag">
-                            <img 
-                              src={flagUrl} 
-                              alt={country.country} 
-                              className="country-flag"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.parentNode.querySelector('.country-emoji').style.display = 'inline';
-                              }}
-                            />
-                            <span className="country-emoji" style={{ display: 'none' }}>
-                              {country.flag}
-                            </span>
-                          </div>
-                          <div className="country-option-details">
-                            <div className="country-name">{country.country}</div>
-                            <div className="country-code">{country.code}</div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                <select
+                  id="phone_country_code"
+                  className="warranty-select phone-country-select"
+                  value={phoneCountryCode}
+                  onChange={(e) => handleCountryCodeChange(e.target.value)}
+                  disabled={countriesLoading}
+                >
+                  {countriesLoading ? (
+                    <option value="+44">Loading countries...</option>
+                  ) : (
+                    <>
+                      <option value="" disabled>
+                        Select country
+                      </option>
+                      {countries.map((country) => {
+                        const flagUrl = findFlagUrlByIso2Code(country.isoCode);
+                        return (
+                          <option
+                            key={country.isoCode || country.code}
+                            value={country.code}
+                          >
+                            <img src={flagUrl} alt={country.country} className="country-flag" /> ({country.code})
+                          </option>
+                        );
+                      })}
+                    </>
+                  )}
+                </select>
               </div>
               
               {/* Phone Number Input (contains full number including country code) */}
