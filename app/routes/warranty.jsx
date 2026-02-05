@@ -39,113 +39,105 @@ export default function WarrantyPage() {
   const [countries, setCountries] = useState([]);
   const [countriesLoading, setCountriesLoading] = useState(false);
   
-  // For custom country selector
+  // Country dropdown state
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState({
-    code: "+44",
-    country: "United Kingdom",
-    isoCode: "GB"
-  });
 
-  // Static fallback list for countries
+  // Static fallback list for countries - accurate phone codes
   const staticCountries = [
-    { code: "+44", country: "United Kingdom", isoCode: "GB" },
-    { code: "+1", country: "United States", isoCode: "US" },
-    { code: "+61", country: "Australia", isoCode: "AU" },
-    { code: "+91", country: "India", isoCode: "IN" },
-    { code: "+49", country: "Germany", isoCode: "DE" },
-    { code: "+33", country: "France", isoCode: "FR" },
-    { code: "+86", country: "China", isoCode: "CN" },
-    { code: "+81", country: "Japan", isoCode: "JP" },
-    { code: "+65", country: "Singapore", isoCode: "SG" },
-    { code: "+971", country: "United Arab Emirates", isoCode: "AE" },
-    { code: "+41", country: "Switzerland", isoCode: "CH" },
-    { code: "+39", country: "Italy", isoCode: "IT" },
-    { code: "+34", country: "Spain", isoCode: "ES" },
-    { code: "+31", country: "Netherlands", isoCode: "NL" },
-    { code: "+32", country: "Belgium", isoCode: "BE" },
-    { code: "+46", country: "Sweden", isoCode: "SE" },
-    { code: "+47", country: "Norway", isoCode: "NO" },
-    { code: "+45", country: "Denmark", isoCode: "DK" },
-    { code: "+358", country: "Finland", isoCode: "FI" },
-    { code: "+353", country: "Ireland", isoCode: "IE" },
+    { code: "+44", country: "United Kingdom", flag: "🇬🇧", isoCode: "GB" },
+    { code: "+1", country: "United States", flag: "🇺🇸", isoCode: "US" },
+    { code: "+61", country: "Australia", flag: "🇦🇺", isoCode: "AU" },
+    { code: "+91", country: "India", flag: "🇮🇳", isoCode: "IN" },
+    { code: "+49", country: "Germany", flag: "🇩🇪", isoCode: "DE" },
+    { code: "+33", country: "France", flag: "🇫🇷", isoCode: "FR" },
+    { code: "+86", country: "China", flag: "🇨🇳", isoCode: "CN" },
+    { code: "+81", country: "Japan", flag: "🇯🇵", isoCode: "JP" },
+    { code: "+65", country: "Singapore", flag: "🇸🇬", isoCode: "SG" },
+    { code: "+971", country: "United Arab Emirates", flag: "🇦🇪", isoCode: "AE" },
+    { code: "+41", country: "Switzerland", flag: "🇨🇭", isoCode: "CH" },
+    { code: "+39", country: "Italy", flag: "🇮🇹", isoCode: "IT" },
+    { code: "+34", country: "Spain", flag: "🇪🇸", isoCode: "ES" },
+    { code: "+31", country: "Netherlands", flag: "🇳🇱", isoCode: "NL" },
+    { code: "+32", country: "Belgium", flag: "🇧🇪", isoCode: "BE" },
+    { code: "+46", country: "Sweden", flag: "🇸🇪", isoCode: "SE" },
+    { code: "+47", country: "Norway", flag: "🇳🇴", isoCode: "NO" },
+    { code: "+45", country: "Denmark", flag: "🇩🇰", isoCode: "DK" },
+    { code: "+358", country: "Finland", flag: "🇫🇮", isoCode: "FI" },
+    { code: "+353", country: "Ireland", flag: "🇮🇪", isoCode: "IE" },
   ];
 
-  // Ideal Postcodes API Key
-  const IDEAL_POSTCODES_API_KEY = "ak_test";
+  // Ideal Postcodes API Key - Add this at the top with your actual key
+  const IDEAL_POSTCODES_API_KEY = "ak_test"; // Replace with your key from ideal-postcodes.co.uk
 
-  // Fetch countries from API
+  // Fetch countries from better API
   useEffect(() => {
     const fetchCountries = async () => {
       setCountriesLoading(true);
       try {
+        // Using a more reliable API for phone codes
         const response = await fetch(
-          "https://restcountries.com/v3.1/all?fields=name,cca2,idd"
+          "https://restcountries.com/v3.1/all?fields=name,cca2,idd,flags"
         );
         const data = await response.json();
 
+        // Process country data
         const formattedCountries = data
           .filter((country) => {
+            // Only include countries with phone codes
             return country.idd && country.idd.root;
           })
           .map((country) => {
+            // Get phone code - handle different formats
             let phoneCode = country.idd.root;
 
+            // Some countries have suffixes
             if (country.idd.suffixes && country.idd.suffixes.length > 0) {
+              // Take the first suffix (usually the main one)
               phoneCode = phoneCode + (country.idd.suffixes[0] || "");
             }
 
+            // Clean up the phone code
             phoneCode = phoneCode.replace(/\s+/g, "");
 
-            // Get flag URL
-            const flagUrl = findFlagUrlByIso2Code(country.cca2);
+            // Get flag emoji from country code
+            const getFlagEmoji = (countryCode) => {
+              if (!countryCode || countryCode.length !== 2) return "🏳️";
+              const codePoints = countryCode
+                .toUpperCase()
+                .split("")
+                .map((char) => 127397 + char.charCodeAt());
+              return String.fromCodePoint(...codePoints);
+            };
 
             return {
               code: phoneCode,
               country: country.name.common,
+              flag: getFlagEmoji(country.cca2),
               isoCode: country.cca2,
-              flagUrl: flagUrl
             };
           })
           .filter((country) => {
+            // Filter out invalid codes and duplicates
             return (
               country.code &&
               country.code !== "+" &&
               country.code.length > 1 &&
+              // Filter out territories that aren't countries
               !country.country.includes("Island") &&
               !country.country.includes("Guernsey") &&
               !country.country.includes("Jersey") &&
               !country.country.includes("Isle of Man")
             );
           })
+          // Sort alphabetically by country name
           .sort((a, b) => a.country.localeCompare(b.country));
 
+        // Set countries, default to UK as selected
         setCountries(formattedCountries);
-        // Set default selected country
-        const ukCountry = formattedCountries.find(c => c.isoCode === 'GB') || {
-          code: "+44",
-          country: "United Kingdom",
-          isoCode: "GB",
-          flagUrl: findFlagUrlByIso2Code("GB")
-        };
-        setSelectedCountry({
-          code: ukCountry.code,
-          country: ukCountry.country,
-          isoCode: ukCountry.isoCode
-        });
       } catch (error) {
         console.error("Error fetching countries:", error);
-        // Convert static countries to include flag URLs
-        const staticCountriesWithFlags = staticCountries.map(country => ({
-          ...country,
-          flagUrl: findFlagUrlByIso2Code(country.isoCode)
-        }));
-        setCountries(staticCountriesWithFlags);
-        setSelectedCountry({
-          code: "+44",
-          country: "United Kingdom",
-          isoCode: "GB"
-        });
+        // Use static list as fallback
+        setCountries(staticCountries);
       } finally {
         setCountriesLoading(false);
       }
@@ -161,25 +153,17 @@ export default function WarrantyPage() {
 
   // Update phone number when country code changes
   useEffect(() => {
+    // If phone number is empty or starts with a different country code
     if (!phoneNumber || !phoneNumber.startsWith(phoneCountryCode)) {
       setPhoneNumber(phoneCountryCode);
     }
   }, [phoneCountryCode]);
 
-  // Close dropdowns when clicking outside
+  // Close country dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
-      // Close country dropdown
-      if (!e.target.closest(".custom-country-selector")) {
+      if (!e.target.closest(".country-code-selector")) {
         setShowCountryDropdown(false);
-      }
-      // Close address suggestions
-      if (!e.target.closest(".postal-address-search")) {
-        setShowSuggestions(false);
-      }
-      // Close product dropdown
-      if (!e.target.closest(".product-typeahead")) {
-        setShowProductDropdown(false);
       }
     };
 
@@ -187,18 +171,18 @@ export default function WarrantyPage() {
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
-  // Debounce address search
+  // Debounce address search - UPDATED to use Ideal Postcodes
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       if (addressSearch.trim().length > 2) {
         searchAddresses(addressSearch);
       }
-    }, 300);
+    }, 300); // Reduced debounce time for better UX
 
     return () => clearTimeout(delayDebounceFn);
   }, [addressSearch]);
 
-  // Fetch products
+  // Fetch products for the Product Name select (now used for typeahead)
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -227,12 +211,13 @@ export default function WarrantyPage() {
     product.title.toLowerCase().includes(productSearchTerm.toLowerCase())
   );
 
-  // Search addresses
+  // Search addresses using Ideal Postcodes API (primary) with OpenStreetMap fallback
   const searchAddresses = async (query) => {
     setIsSearching(true);
     setShowSuggestions(false);
     
     try {
+      // Try Ideal Postcodes first (more accurate for UK addresses)
       const response = await fetch(
         `https://api.ideal-postcodes.co.uk/v1/autocomplete/addresses?api_key=${IDEAL_POSTCODES_API_KEY}&query=${encodeURIComponent(
           query
@@ -240,14 +225,18 @@ export default function WarrantyPage() {
       );
 
       const data = await response.json();
+      console.log("Ideal Postcodes API Response:", data); // Debug log
 
       if (data.result && data.result.hits && data.result.hits.length > 0) {
+        // Format Ideal Postcodes results to match your existing structure
         const formattedSuggestions = data.result.hits.map((hit) => {
+          // Parse the suggestion string to extract components
           const suggestionParts = hit.suggestion.split(', ');
           let street = suggestionParts[0] || '';
           let town = suggestionParts[2] || '';
           let postalCode = suggestionParts[3] || '';
           
+          // If we have more parts, adjust
           if (suggestionParts.length > 4) {
             street = suggestionParts.slice(0, 2).join(', ');
             town = suggestionParts[2] || '';
@@ -263,25 +252,30 @@ export default function WarrantyPage() {
               town: town,
               country: "United Kingdom",
               postcode: postalCode,
+              // Store the full hit object for later use
               ideal_postcodes_hit: hit
             }
           };
         });
         
+        console.log("Formatted suggestions:", formattedSuggestions); // Debug log
         setAddressSuggestions(formattedSuggestions);
         setShowSuggestions(true);
       } else {
+        console.log("No results from Ideal Postcodes, trying OpenStreetMap");
+        // If no results from Ideal Postcodes, try OpenStreetMap as fallback
         await searchOpenStreetMap(query);
       }
     } catch (err) {
       console.error("Ideal Postcodes search error:", err);
+      // Fallback to OpenStreetMap if Ideal Postcodes fails
       await searchOpenStreetMap(query);
     } finally {
       setIsSearching(false);
     }
   };
 
-  // Fallback to OpenStreetMap
+  // Fallback to OpenStreetMap Nominatim API
   const searchOpenStreetMap = async (query) => {
     try {
       const response = await fetch(
@@ -312,7 +306,7 @@ export default function WarrantyPage() {
     }
   };
 
-  // Handle address selection
+  // Handle address selection - UPDATED to handle both Ideal Postcodes and OpenStreetMap formats
   const handleSelectAddress = async (suggestion) => {
     const address = suggestion.address;
     
@@ -321,9 +315,11 @@ export default function WarrantyPage() {
     let country = "";
     let postalCode = "";
 
+    // Check if it's an Ideal Postcodes result
     if (address.ideal_postcodes_hit) {
       const hit = address.ideal_postcodes_hit;
       
+      // We need to fetch the full address details using udprn
       try {
         const udprn = hit.udprn;
         const response = await fetch(
@@ -341,6 +337,7 @@ export default function WarrantyPage() {
           country = "United Kingdom";
           postalCode = fullAddress.postcode || "";
         } else {
+          // If we can't get full details, parse from suggestion
           const suggestionParts = hit.suggestion.split(', ');
           street = suggestionParts[0] || '';
           town = suggestionParts[2] || '';
@@ -349,6 +346,7 @@ export default function WarrantyPage() {
         }
       } catch (error) {
         console.error("Error fetching full address details:", error);
+        // Fallback to parsing suggestion
         const suggestionParts = hit.suggestion.split(', ');
         street = suggestionParts[0] || '';
         town = suggestionParts[2] || '';
@@ -356,6 +354,8 @@ export default function WarrantyPage() {
         country = "United Kingdom";
       }
     } else {
+      // OpenStreetMap format (original logic)
+      // Build street address
       if (address.road) {
         street = address.road;
         if (address.house_number) {
@@ -365,6 +365,7 @@ export default function WarrantyPage() {
         street = address.pedestrian;
       }
 
+      // Get town/city (prioritize in this order)
       town =
         address.city ||
         address.town ||
@@ -373,10 +374,14 @@ export default function WarrantyPage() {
         address.county ||
         "";
 
+      // Get country
       country = address.country || "";
+
+      // Get postal code
       postalCode = address.postcode || "";
     }
 
+    // Update address fields
     setAddressFields({
       street: street || "",
       town: town || "",
@@ -384,6 +389,7 @@ export default function WarrantyPage() {
       postal_code: postalCode || "",
     });
 
+    // Clear search and suggestions
     setAddressSearch("");
     setAddressSuggestions([]);
     setShowSuggestions(false);
@@ -400,12 +406,39 @@ export default function WarrantyPage() {
     }));
   };
 
+  // Close address suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest(".postal-address-search")) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
+
+  // Close product dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!e.target.closest(".product-typeahead")) {
+        setShowProductDropdown(false);
+      }
+    };
+
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
+
   // Handle phone number input change
   const handlePhoneNumberChange = (value) => {
+    // Always keep the country code at the beginning
     if (!value.startsWith(phoneCountryCode)) {
+      // If user tries to delete the country code, prevent it
       if (phoneCountryCode.startsWith(value)) {
         setPhoneNumber(phoneCountryCode);
       } else {
+        // Otherwise, prepend the country code
         setPhoneNumber(phoneCountryCode + value.replace(phoneCountryCode, ''));
       }
     } else {
@@ -420,9 +453,13 @@ export default function WarrantyPage() {
       return false;
     }
 
+    // Remove non-digits except plus at the beginning
     const phoneWithoutFormatting = phoneNumber.replace(/[^\d\+]/g, "");
+    
+    // Count only digits after the plus
     const digitsOnly = phoneWithoutFormatting.replace(/\D/g, "");
     
+    // Check total length (including country code)
     if (digitsOnly.length < 10) {
       setPhoneError("Phone number is too short");
       return false;
@@ -442,31 +479,12 @@ export default function WarrantyPage() {
     const oldCode = phoneCountryCode;
     setPhoneCountryCode(newCode);
     
+    // Update phone number with new country code
     if (phoneNumber.startsWith(oldCode)) {
       setPhoneNumber(newCode + phoneNumber.slice(oldCode.length));
     } else {
       setPhoneNumber(newCode + phoneNumber.replace(/^\+\d+/, ''));
     }
-    
-    const selected = countries.find(c => c.code === newCode);
-    if (selected) {
-      setSelectedCountry({
-        code: selected.code,
-        country: selected.country,
-        isoCode: selected.isoCode
-      });
-    }
-  };
-
-  // Handle country selection from custom dropdown
-  const handleCountrySelect = (country) => {
-    setSelectedCountry({
-      code: country.code,
-      country: country.country,
-      isoCode: country.isoCode
-    });
-    handleCountryCodeChange(country.code);
-    setShowCountryDropdown(false);
   };
 
   // Your existing functions
@@ -536,12 +554,14 @@ export default function WarrantyPage() {
   async function handleSubmit(e) {
     e.preventDefault();
 
+    // Validate email verification
     if (!emailVerified) {
       setStatus("Please verify your email first.");
       setStatusType("error");
       return;
     }
 
+    // Validate phone number
     if (!validatePhoneNumber()) {
       setStatus("Please enter a valid phone number.");
       setStatusType("error");
@@ -550,6 +570,10 @@ export default function WarrantyPage() {
 
     const formData = new FormData(e.currentTarget);
     const body = Object.fromEntries(formData.entries());
+
+    // Remove old phone fields
+    delete body.phone;
+    delete body.phone_country_code;
 
     // Add the complete phone number
     body.phone = phoneNumber;
@@ -690,75 +714,77 @@ export default function WarrantyPage() {
             unsubscribe at any time.
           </p>
 
-          {/* Phone Number Section - UPDATED with custom dropdown */}
+          {/* Phone Number Section - UPDATED */}
           <div className="warranty-field fulllwwidth phone98008008">
             <label htmlFor="phone" className="phone-sub-label">
               Phone Number
             </label>
             
             <div className="phone-input-container">
-              {/* Custom Country Selector with Flag Images */}
-              <div className="custom-country-selector">
-                <div 
-                  className="country-select-trigger"
-                  onClick={() => setShowCountryDropdown(!showCountryDropdown)}
-                >
-                  {!countriesLoading && selectedCountry && (
-                    <>
-                      {selectedCountry.flagUrl ? (
+              {/* Country Code Selector with Flags - Custom Dropdown */}
+              <div className="country-code-selector">
+                <div className="country-select-input" onClick={() => setShowCountryDropdown(!showCountryDropdown)}>
+                  <div className="selected-country">
+                    {phoneCountryCode && (
+                      <>
                         <img 
-                          src={selectedCountry.flagUrl} 
-                          alt={selectedCountry.country}
-                          className="selected-flag"
+                          src={findFlagUrlByIso2Code(countries.find(c => c.code === phoneCountryCode)?.isoCode)} 
+                          alt="Flag"
+                          className="country-flag"
                           onError={(e) => {
                             e.target.style.display = 'none';
-                            e.target.nextElementSibling?.style.marginLeft = '0';
+                            e.target.parentNode.querySelector('.country-emoji').style.display = 'inline';
                           }}
                         />
-                      ) : (
-                        <span className="flag-placeholder">🏳️</span>
-                      )}
-                      <span className="selected-code">{selectedCountry.code}</span>
-                      <span className="dropdown-arrow">▼</span>
-                    </>
-                  )}
-                  {countriesLoading && (
-                    <span className="loading-text">Loading...</span>
-                  )}
+                        <span className="country-emoji" style={{ display: 'none' }}>
+                          {countries.find(c => c.code === phoneCountryCode)?.flag || '🏳️'}
+                        </span>
+                        <span className="country-code">{phoneCountryCode}</span>
+                      </>
+                    )}
+                  </div>
+                  <span className="dropdown-arrow">▼</span>
                 </div>
                 
                 {showCountryDropdown && !countriesLoading && (
                   <div className="country-dropdown">
-                    <div className="country-list">
-                      {countries.map((country) => (
+                    {countries.map((country) => {
+                      const flagUrl = findFlagUrlByIso2Code(country.isoCode);
+                      return (
                         <div
-                          key={country.isoCode}
-                          className={`country-item ${selectedCountry.isoCode === country.isoCode ? 'selected' : ''}`}
-                          onClick={() => handleCountrySelect(country)}
+                          key={country.isoCode || country.code}
+                          className="country-option"
+                          onClick={() => {
+                            handleCountryCodeChange(country.code);
+                            setShowCountryDropdown(false);
+                          }}
                         >
-                          {country.flagUrl ? (
+                          <div className="country-option-flag">
                             <img 
-                              src={country.flagUrl} 
-                              alt={country.country}
+                              src={flagUrl} 
+                              alt={country.country} 
                               className="country-flag"
                               onError={(e) => {
                                 e.target.style.display = 'none';
-                                e.target.nextElementSibling?.style.marginLeft = '0';
+                                e.target.parentNode.querySelector('.country-emoji').style.display = 'inline';
                               }}
                             />
-                          ) : (
-                            <span className="flag-placeholder">🏳️</span>
-                          )}
-                          <span className="country-name">{country.country}</span>
-                          <span className="country-code">{country.code}</span>
+                            <span className="country-emoji" style={{ display: 'none' }}>
+                              {country.flag}
+                            </span>
+                          </div>
+                          <div className="country-option-details">
+                            <div className="country-name">{country.country}</div>
+                            <div className="country-code">{country.code}</div>
+                          </div>
                         </div>
-                      ))}
-                    </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
               
-              {/* Phone Number Input */}
+              {/* Phone Number Input (contains full number including country code) */}
               <input
                 id="phone"
                 className="warranty-input phone-number-input"
@@ -767,7 +793,7 @@ export default function WarrantyPage() {
                 onChange={(e) => handlePhoneNumberChange(e.target.value)}
                 placeholder="+44 123 456 7890"
                 required
-                name="phone"
+                name="phone" // This is the field that gets submitted
               />
             </div>
             
@@ -778,7 +804,7 @@ export default function WarrantyPage() {
             )}
           </div>
 
-          {/* Address Search with Autocomplete */}
+          {/* Address Search with Autocomplete - UPDATED placeholder */}
           <div className="postal-address-search">
             <div className="warranty-field">
               <label htmlFor="search_address">Search UK Address</label>
@@ -937,7 +963,7 @@ export default function WarrantyPage() {
             />
           </div>
 
-          {/* Product typeahead field */}
+          {/* NEW: Product typeahead field */}
           <div className="warranty-field product-typeahead">
             <label htmlFor="product_search">Product</label>
 
