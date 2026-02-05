@@ -3,7 +3,7 @@ export default function warranty() {
     <s-page heading="Warranty form integration app">
         <s-section heading="Vist https://mobitel.uk/pages/warranty-form">
             <s-paragraph>Fill the form then generate warranty</s-paragraph>
-            <a href="https://admin.shopify.com/store/mobiteluk/content/metaobjects/entries/warranty_activation_details">View MetaObject Listing</a>
+            <a href="https://admin.shopify.com/store/mobiteluk/content/metaobjects/entries/warranty_activation_details" target="_blank">View MetaObject Listing</a>
         </s-section>
     </s-page>
    );
