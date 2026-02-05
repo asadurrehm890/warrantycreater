@@ -31,7 +31,7 @@ export default function WarrantyPage() {
     postal_code: "",
   });
 
-  // Phone number states
+  // Phone number states - UPDATED
   const [phoneCountryCode, setPhoneCountryCode] = useState("+44");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [phoneError, setPhoneError] = useState("");
@@ -141,6 +141,19 @@ export default function WarrantyPage() {
 
     fetchCountries();
   }, []);
+
+  // Initialize phone number with default country code
+  useEffect(() => {
+    setPhoneNumber("+44");
+  }, []);
+
+  // Update phone number when country code changes
+  useEffect(() => {
+    // If phone number is empty or starts with a different country code
+    if (!phoneNumber || !phoneNumber.startsWith(phoneCountryCode)) {
+      setPhoneNumber(phoneCountryCode);
+    }
+  }, [phoneCountryCode]);
 
   // Debounce address search - UPDATED to use Ideal Postcodes
   useEffect(() => {
@@ -401,17 +414,37 @@ export default function WarrantyPage() {
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
+  // Handle phone number input change
+  const handlePhoneNumberChange = (value) => {
+    // Always keep the country code at the beginning
+    if (!value.startsWith(phoneCountryCode)) {
+      // If user tries to delete the country code, prevent it
+      if (phoneCountryCode.startsWith(value)) {
+        setPhoneNumber(phoneCountryCode);
+      } else {
+        // Otherwise, prepend the country code
+        setPhoneNumber(phoneCountryCode + value.replace(phoneCountryCode, ''));
+      }
+    } else {
+      setPhoneNumber(value);
+    }
+  };
+
   // Validate phone number
   const validatePhoneNumber = () => {
-    if (!phoneNumber.trim()) {
+    if (!phoneNumber.trim() || phoneNumber === phoneCountryCode) {
       setPhoneError("Phone number is required");
       return false;
     }
 
-    // Remove non-digits for validation
-    const digitsOnly = phoneNumber.replace(/\D/g, "");
-
-    if (digitsOnly.length < 7) {
+    // Remove non-digits except plus at the beginning
+    const phoneWithoutFormatting = phoneNumber.replace(/[^\d\+]/g, "");
+    
+    // Count only digits after the plus
+    const digitsOnly = phoneWithoutFormatting.replace(/\D/g, "");
+    
+    // Check total length (including country code)
+    if (digitsOnly.length < 10) {
       setPhoneError("Phone number is too short");
       return false;
     }
@@ -425,24 +458,16 @@ export default function WarrantyPage() {
     return true;
   };
 
-  // Handle phone number input change
-  const handlePhoneNumberChange = (value) => {
-    // Allow only numbers, spaces, dashes, and parentheses
-    const cleaned = value.replace(/[^\d\s\-\(\)]/g, "");
-    setPhoneNumber(cleaned);
-
-    // Validate as user types
-    if (cleaned) {
-      const digitsOnly = cleaned.replace(/\D/g, "");
-      if (digitsOnly.length < 7) {
-        setPhoneError("Phone number is too short");
-      } else if (digitsOnly.length > 15) {
-        setPhoneError("Phone number is too long");
-      } else {
-        setPhoneError("");
-      }
+  // Handle country code change
+  const handleCountryCodeChange = (newCode) => {
+    const oldCode = phoneCountryCode;
+    setPhoneCountryCode(newCode);
+    
+    // Update phone number with new country code
+    if (phoneNumber.startsWith(oldCode)) {
+      setPhoneNumber(newCode + phoneNumber.slice(oldCode.length));
     } else {
-      setPhoneError("");
+      setPhoneNumber(newCode + phoneNumber.replace(/^\+\d+/, ''));
     }
   };
 
@@ -530,13 +555,12 @@ export default function WarrantyPage() {
     const formData = new FormData(e.currentTarget);
     const body = Object.fromEntries(formData.entries());
 
-    // Remove the old single phone field if it exists
+    // Remove old phone fields
     delete body.phone;
     delete body.phone_country_code;
 
-    // Combine country code and phone number
-    const fullPhone = `${phoneCountryCode}${phoneNumber.replace(/\D/g, "")}`;
-    body.phone = fullPhone;
+    // Add the complete phone number
+    body.phone = phoneNumber;
 
     body.email = email;
     body.otpToken = otpToken;
@@ -674,58 +698,62 @@ export default function WarrantyPage() {
             unsubscribe at any time.
           </p>
 
-          {/* Phone Number Section - Updated to match your form style */}
+          {/* Phone Number Section - UPDATED */}
           <div className="warranty-field fulllwwidth phone98008008">
             <label htmlFor="phone" className="phone-sub-label">
               Phone Number
             </label>
-           
-              <select
-                id="phone_country_code"
-                className="warranty-select"
-                value={phoneCountryCode}
-                onChange={(e) => setPhoneCountryCode(e.target.value)}
-                disabled={countriesLoading}
-              >
-                {countriesLoading ? (
-                  <option value="+44">Loading countries...</option>
-                ) : (
-                  <>
-                    <option value="" disabled>
-                      Select country
-                    </option>
-                    {countries.map((country) => (
-                      <option
-                        key={country.isoCode || country.code}
-                        value={country.code}
-                      >
-                        {country.flag} {country.country} ({country.code})
+            
+            <div className="phone-input-container">
+              {/* Country Code Selector with Flags */}
+              <div className="country-code-selector">
+                <select
+                  id="phone_country_code"
+                  className="warranty-select phone-country-select"
+                  value={phoneCountryCode}
+                  onChange={(e) => handleCountryCodeChange(e.target.value)}
+                  disabled={countriesLoading}
+                >
+                  {countriesLoading ? (
+                    <option value="+44">Loading countries...</option>
+                  ) : (
+                    <>
+                      <option value="" disabled>
+                        Select country
                       </option>
-                    ))}
-                  </>
-                )}
-              </select>
+                      {countries.map((country) => (
+                        <option
+                          key={country.isoCode || country.code}
+                          value={country.code}
+                        >
+                          {country.flag} {country.country} ({country.code})
+                        </option>
+                      ))}
+                    </>
+                  )}
+                </select>
+              </div>
+              
+              {/* Phone Number Input (contains full number including country code) */}
+              <input
+                id="phone"
+                className="warranty-input phone-number-input"
+                type="tel"
+                value={phoneNumber}
+                onChange={(e) => handlePhoneNumberChange(e.target.value)}
+                placeholder="+44 123 456 7890"
+                required
+                name="phone" // This is the field that gets submitted
+              />
+            </div>
             
-          
-          
-            
-            <input
-              id="phone"
-              className="warranty-input"
-              type="tel"
-              value={phoneNumber}
-              onChange={(e) => handlePhoneNumberChange(e.target.value)}
-              placeholder="123 456 7890"
-              required
-            />
-            {/* If you want to show phone error: 
             {phoneError && (
-              <div className="phone-error">
+              <div className="phone-error-message">
                 {phoneError}
               </div>
-            )} */}
-          
-                    </div>
+            )}
+          </div>
+
           {/* Address Search with Autocomplete - UPDATED placeholder */}
           <div className="postal-address-search">
             <div className="warranty-field">
