@@ -435,7 +435,7 @@ input#phone{
 }
 
 .country-code-selector {
-  flex: 0 0 200px;
+  flex: 0 0 150px;
 }
 
 .phone-country-select {
