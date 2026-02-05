@@ -715,9 +715,7 @@ export default function WarrantyPage() {
               id="termsformarketing"
               defaultChecked
             />
-            I agree to receive marketing communications from Mobitel regarding
-            products, services, offers, and promotions. I understand that I can
-            unsubscribe at any time.
+            Send me warranty status updates and follow-ups, which may include occasional offers and tech tips. Unsubscribe anytime.
           </p>
 
           {/* Phone Number Section - UPDATED */}
