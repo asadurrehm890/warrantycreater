@@ -3,7 +3,6 @@ import shopify from "../shopify.server";
 
 // Reuse the same helper style as in api.submit-warranty.jsx
 async function callAdminGraphQL(session, query, variables = {}) {
-  // Use the same API version you're using elsewhere (2024-07 in your file)
   const endpoint = `https://${session.shop}/admin/api/2024-07/graphql.json`;
 
   let res;
@@ -49,20 +48,7 @@ async function callAdminGraphQL(session, query, variables = {}) {
   return { ok: true, data: json.data };
 }
 
-// Validated Admin GraphQL query for products
-// Reference: https://shopify.dev/docs/api/admin-graphql/latest/queries/products
-// const PRODUCTS_QUERY = `#graphql
-//   query WarrantyProducts($first: Int!) {
-//     products(first: $first) {
-//       nodes {
-//         id
-//         title
-//         handle
-//       }
-//     }
-//   }
-// `;
-
+// Updated: include tags so we can sort by them
 const PRODUCTS_QUERY = `#graphql
   query WarrantyProductsByVendor($first: Int!, $query: String!) {
     products(first: $first, query: $query) {
@@ -71,14 +57,25 @@ const PRODUCTS_QUERY = `#graphql
         title
         handle
         vendor
+        tags
       }
     }
   }
 `;
 
+// Helper to compute tag priority
+function getTagPriority(tags) {
+  if (!Array.isArray(tags)) return 2;
+
+  const lowerTags = tags.map((t) => t.toLowerCase());
+
+  if (lowerTags.includes("mobitel mobile phones")) return 0;
+  if (lowerTags.includes("mobitel accessories")) return 1;
+  return 2;
+}
+
 // GET /api/products
 export async function loader({ request }) {
-  // Only allow GET
   if (request.method !== "GET") {
     return new Response(JSON.stringify({ error: "Method not allowed" }), {
       status: 405,
@@ -86,7 +83,6 @@ export async function loader({ request }) {
     });
   }
 
-  // This should match what you use in api.submit-warranty.jsx
   const shopDomain = "mobiteluk.myshopify.com";
 
   const sessions = await shopify.sessionStorage.findSessionsByShop(shopDomain);
@@ -103,24 +99,33 @@ export async function loader({ request }) {
     );
   }
 
-  // Call Admin GraphQL with offline session
   const productsRes = await callAdminGraphQL(session, PRODUCTS_QUERY, {
-    first: 200, // adjust as you like
-    query: 'vendor:mobitel tag_not:"Tempered Glass"',
+    first: 200,
+    query: 'vendor:mobitel',
   });
 
   if (!productsRes.ok) {
     console.error("Failed to load products", productsRes.error);
-    return new Response(
-      JSON.stringify({ error: productsRes.error }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify({ error: productsRes.error }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   const nodes = productsRes.data?.products?.nodes ?? [];
+
+  // Sort: mobitel mobile phones -> mobitel accessories -> others
+  nodes.sort((a, b) => {
+    const priorityA = getTagPriority(a.tags);
+    const priorityB = getTagPriority(b.tags);
+
+    if (priorityA !== priorityB) {
+      return priorityA - priorityB;
+    }
+
+    // Optional secondary sort (e.g., by title)
+    return a.title.localeCompare(b.title);
+  });
 
   const simplified = nodes.map((p) => ({
     id: p.id,
