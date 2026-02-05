@@ -715,7 +715,7 @@ export default function WarrantyPage() {
               id="termsformarketing"
               defaultChecked
             />
-            Send me warranty status updates and follow-ups, which may include occasional offers and tech tips. Unsubscribe anytime.
+           Keep me updated with warranty status updates and follow-ups, which may include occasional offers and tech tips. You can unsubscribe anytime.
           </p>
 
           {/* Phone Number Section - UPDATED */}
