@@ -422,3 +422,63 @@ input#phone{
   color: #999;
   cursor: default;
 }
+
+
+/* Phone Input Styles */
+.phone-input-container {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.country-code-selector {
+  flex: 0 0 150px;
+}
+
+.phone-country-select {
+  width: 100%;
+  padding: 12px;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.phone-number-input {
+  flex: 1;
+  min-width: 0; /* Important for flexbox to work properly */
+}
+
+.phone-error-message {
+  color: #e74c3c;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* Style options in the select dropdown */
+.phone-country-select option {
+  font-size: 14px;
+  padding: 8px;
+}
+
+/* Make sure the dropdown shows flags */
+.phone-country-select {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* For better mobile experience */
+@media (max-width: 768px) {
+  .phone-input-container {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .country-code-selector {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+  
+  .phone-country-select {
+    width: 100%;
+  }
+}
