@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "../styles/warranty.css";
 import { findFlagUrlByIso2Code } from "country-flags-svg";
+import Select from "react-select";
 
 export default function WarrantyPage() {
   const [emailVerified, setEmailVerified] = useState(false);
@@ -600,6 +601,26 @@ export default function WarrantyPage() {
     }
   }
 
+
+    const countryOptions = countries.map((country) => ({
+      value: country.code,
+      label: country.country,
+      isoCode: country.isoCode,
+    }));
+
+
+      const formatOptionLabel = ({ label, value, isoCode }) => {
+      const flagUrl = findFlagUrlByIso2Code(isoCode);
+
+      return (
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <img src={flagUrl} alt={label} width="20" />
+          <span>{label} ({value})</span>
+        </div>
+      );
+    };
+
+
   return (
     <main className="warranty-page">
       <h1>Warranty Activation</h1>
@@ -708,7 +729,15 @@ export default function WarrantyPage() {
             <div className="phone-input-container">
               {/* Country Code Selector with Flags */}
               <div className="country-code-selector">
-                <select
+                <Select
+                  options={countryOptions}
+                  value={countryOptions.find((c) => c.value === phoneCountryCode)}
+                  onChange={(selected) => handleCountryCodeChange(selected.value)}
+                  formatOptionLabel={formatOptionLabel}
+                  isSearchable
+                />
+
+               {/* <select
                   id="phone_country_code"
                   className="warranty-select phone-country-select"
                   value={phoneCountryCode}
@@ -735,7 +764,7 @@ export default function WarrantyPage() {
                       })}
                     </>
                   )}
-                </select>
+                </select>*/}
               </div>
               
               {/* Phone Number Input (contains full number including country code) */}
