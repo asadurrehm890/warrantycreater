@@ -379,7 +379,10 @@
 }
 
 #phone_country_code{
-  width: 20% !important;
+  width: 100% !important;
+  height: 4rem;
+  background-color: #17171706;
+  border: 1px solid rgba(23, 23, 23, 0.025);
 }
 
 
