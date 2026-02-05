@@ -390,9 +390,7 @@
   flex-direction:row !important;
   gap:1rem !important;
 }
-input#phone{
-  width: 100% !important;
-}
+
 
 
 .product-typeahead {
