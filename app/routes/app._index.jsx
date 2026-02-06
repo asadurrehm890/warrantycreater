@@ -2,7 +2,12 @@ export default function Warranty() {
   return (
     <s-page heading="Warranty Activation">
       <s-section>
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ 
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            textAlign: 'center',
+            gap: '1rem', }}>
           <s-paragraph>
             View, manage, and process all customer warranty registrations submitted through the warranty activation form{' '}
             <s-link href="https://mobitel.uk/pages/warranty-activation">
