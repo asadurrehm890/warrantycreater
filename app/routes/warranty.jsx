@@ -463,6 +463,8 @@ export default function WarrantyPage() {
   // Handle country code change
   const handleCountryCodeChange = (newCode) => {
     const oldCode = phoneCountryCode;
+
+    console.log(newCode);
     setPhoneCountryCode(newCode);
     
     // Update phone number with new country code
