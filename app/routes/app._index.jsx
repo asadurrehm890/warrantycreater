@@ -11,12 +11,7 @@ export default function Warranty() {
             gap: '1rem',
           }}
         >
-          <p>
-            View, manage, and process all customer warranty registrations submitted through the warranty activation form.
-           <br/>
-           https://mobitel.uk/pages/warranty-activation
-           
-          </p>
+          <p>View, manage, and process all customer warranty activation requests submitted through the warranty activation form.</p>
 
           <s-button
             href="https://admin.shopify.com/store/mobiteluk/content/metaobjects/entries/warranty_activation_details"
