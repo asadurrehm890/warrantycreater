@@ -12,18 +12,15 @@ export default function Warranty() {
           }}
         >
           <p>
-            View, manage, and process all customer warranty registrations submitted through the warranty activation form{' '}
-            <s-link
-              href="https://mobitel.uk/pages/warranty-activation"
-              target="_self"
-            >
-              https://mobitel.uk/pages/warranty-activation
-            </s-link>
+            View, manage, and process all customer warranty registrations submitted through the warranty activation form.
+           <br/>
+           https://mobitel.uk/pages/warranty-activation
+           
           </p>
 
           <s-button
             href="https://admin.shopify.com/store/mobiteluk/content/metaobjects/entries/warranty_activation_details"
-            target="_self"
+           
             variant="primary"
           >
             View All Warranty Activation Requests
