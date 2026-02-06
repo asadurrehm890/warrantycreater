@@ -463,8 +463,6 @@ export default function WarrantyPage() {
   // Handle country code change
   const handleCountryCodeChange = (newCode) => {
     const oldCode = phoneCountryCode;
-
-    console.log(newCode);
     setPhoneCountryCode(newCode);
     
     // Update phone number with new country code
@@ -617,7 +615,7 @@ export default function WarrantyPage() {
       return (
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
           <img src={flagUrl} alt={label} width="20" />
-          <span>{label}({value})</span>
+          <span><span className="ki0490400ki440ki">{label}</span>({value})</span>
         </div>
       );
     };
