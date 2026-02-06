@@ -102,7 +102,7 @@
 }
 .flexpara{
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 1rem;
   font-size: 1em;
 }
