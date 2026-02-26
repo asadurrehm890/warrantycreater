@@ -256,12 +256,7 @@ const response = await fetch('https://api.brevo.com/v3/smtp/email', {
                                 <tr>
                                   <td>
                                   <p> If you didn't request this code, please ignore this email or contact us at <a href="mailto:info@mobitel.uk">info@mobitel.uk</a></p>
-                                    <p class="disclaimer__subtext">
-                                     If you have any questions, reply to this email or contact us at <a href="mailto:info@mobitel.uk">info@mobitel.uk</a>
-                                    </p>
-                                    <p class="disclaimer__subtext" style="margin-top: 10px;">
-                                      This is an automated message, please do not reply.
-                                    </p>
+                                    
                                   </td>
                                 </tr>
                               </table>
