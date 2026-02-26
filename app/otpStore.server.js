@@ -214,7 +214,7 @@ const response = await fetch('https://api.brevo.com/v3/smtp/email', {
                                           </h1>
                                         </td>
                                         <td align="right">
-                                          <span class="order-number__text">Warranty Activation</span>
+                                          <span class="order-number__text"></span>
                                         </td>
                                       </tr>
                                     </table>
@@ -239,7 +239,7 @@ const response = await fetch('https://api.brevo.com/v3/smtp/email', {
                                       <span class="otp-code">${code}</span>
                                     </div>
                                     <p>This OTP is valid for <span class="validity-note">10 minutes</span>.</p>
-                                    <p>If you didn't request this code, please ignore this email or contact us immediately.</p>
+                                    
                                     <hr>
                                   </td>
                                 </tr>
@@ -255,6 +255,7 @@ const response = await fetch('https://api.brevo.com/v3/smtp/email', {
                               <table class="container" width="560" cellpadding="0" cellspacing="0">
                                 <tr>
                                   <td>
+                                  <p> If you didn't request this code, please ignore this email or contact us at <a href="mailto:info@mobitel.uk">info@mobitel.uk</a></p>
                                     <p class="disclaimer__subtext">
                                      If you have any questions, reply to this email or contact us at <a href="mailto:info@mobitel.uk">info@mobitel.uk</a>
                                     </p>
