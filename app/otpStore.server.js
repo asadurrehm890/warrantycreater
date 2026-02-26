@@ -210,7 +210,7 @@ const response = await fetch('https://api.brevo.com/v3/smtp/email', {
                                       <tr>
                                         <td class="shop-name__cell" align="left">
                                           <h1 class="shop-name__text">
-                                            <a href="https://mobitel.uk/"><img src="https://cdn.shopify.com/s/files/1/0990/1559/0226/files/Mobitel-logoResized.png?v=3337" width="70" height="70" /></a>
+                                            <a href="https://mobitel.uk/"><img src="https://cdn.shopify.com/s/files/1/0990/1559/0226/files/Mobitel-logoResized.png?v=3337" width="70" height="60.69" /></a>
                                           </h1>
                                         </td>
                                         <td align="right">
@@ -256,8 +256,7 @@ const response = await fetch('https://api.brevo.com/v3/smtp/email', {
                                 <tr>
                                   <td>
                                     <p class="disclaimer__subtext">
-                                      If you have any questions, contact us at 
-                                      <a href="mailto:${senderEmail}">${senderEmail}</a>
+                                     If you have any questions, reply to this email or contact us at <a href="mailto:info@mobitel.uk">info@mobitel.uk</a>
                                     </p>
                                     <p class="disclaimer__subtext" style="margin-top: 10px;">
                                       This is an automated message, please do not reply.
