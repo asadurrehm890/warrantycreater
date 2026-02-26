@@ -73,14 +73,14 @@ const response = await fetch('https://api.brevo.com/v3/smtp/email', {
         name: email.split('@')[0]
       }
     ],
-    subject: "Your Warranty Activation OTP",
+    subject: "Your Mobitel Warranty Activation Code (Valid for 10 Minutes)",
     textContent: `Your OTP code is: ${code}. It is valid for 10 minutes.`,
     htmlContent: `<!DOCTYPE html>
                 <html lang="en">
                 <head>
                   <meta charset="UTF-8">
                   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                  <title>Your Warranty Activation OTP</title>
+                  <title>Your Mobitel Warranty Activation Code (Valid for 10 Minutes)</title>
                   <style>
                     body { 
                       font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; 
