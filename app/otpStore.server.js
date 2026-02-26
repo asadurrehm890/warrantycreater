@@ -157,7 +157,7 @@ const response = await fetch('https://api.brevo.com/v3/smtp/email', {
                       font-size: 42px; 
                       font-weight: 600; 
                       letter-spacing: 12px; 
-                      color: #2563eb; 
+                      color: #ed1d24; 
                       line-height: 1.3; 
                     }
                     .validity-note { 
