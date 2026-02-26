@@ -130,7 +130,7 @@ const response = await fetch('https://api.brevo.com/v3/smtp/email', {
                       background-color: #ffffff; 
                     }
                     .content__cell { 
-                      padding: 40px 0; 
+                       
                       background-color: #ffffff; 
                     }
                     h2 { 
