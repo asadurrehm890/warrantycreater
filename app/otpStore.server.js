@@ -210,7 +210,7 @@ const response = await fetch('https://api.brevo.com/v3/smtp/email', {
                                       <tr>
                                         <td class="shop-name__cell" align="left">
                                           <h1 class="shop-name__text">
-                                            <a href="https://mobitel.uk/"><img src="https://cdn.shopify.com/s/files/1/0990/1559/0226/files/Mobitel-logoResized.png?v=3337" width="200" height="200" /></a>
+                                            <a href="https://mobitel.uk/"><img src="https://cdn.shopify.com/s/files/1/0990/1559/0226/files/Mobitel-logoResized.png?v=3337" width="70" height="70" /></a>
                                           </h1>
                                         </td>
                                         <td align="right">
