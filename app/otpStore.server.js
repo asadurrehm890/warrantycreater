@@ -210,7 +210,7 @@ const response = await fetch('https://api.brevo.com/v3/smtp/email', {
                                       <tr>
                                         <td class="shop-name__cell" align="left">
                                           <h1 class="shop-name__text">
-                                            <a href="${shopUrl || '#'}">${shopName || 'Your Store'}</a>
+                                            <a href="https://mobitel.uk/">Mobitel UK</a>
                                           </h1>
                                         </td>
                                         <td align="right">
@@ -233,7 +233,7 @@ const response = await fetch('https://api.brevo.com/v3/smtp/email', {
                                 <tr>
                                   <td>
                                     <h2>Warranty Activation OTP</h2>
-                                    <p>Hi ${customerName || 'there'},</p>
+                                    
                                     <p>Your One-Time Password for warranty activation is:</p>
                                     <div class="otp-container">
                                       <span class="otp-code">${code}</span>
