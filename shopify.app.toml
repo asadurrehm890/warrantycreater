@@ -2,7 +2,7 @@
 
 client_id = "760a1b1a61328e30779372d9c2159b8e"
 name = "Warranty Activation"
-application_url = "https://warrantycreater-production.up.railway.app"
+application_url = "https://warrantycreater.vercel.app/"
 embedded = true
 
 [build]
@@ -24,7 +24,7 @@ api_version = "2026-04"
 scopes = "write_products,write_customers,write_metaobjects,write_metaobject_definitions"
 
 [auth]
-redirect_urls = [ "https://warrantycreater-production.up.railway.app/api/auth" ]
+redirect_urls = [ "https://warrantycreater.vercel.app/api/auth" ]
 
 
 #[metaobjects.app.warranty_registration]
