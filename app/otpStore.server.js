@@ -4,83 +4,45 @@ const otpMap = new Map();
 
 // Function to send email via Brevo API
 async function sendBrevoEmail(email, code) {
-  const apiKey = process.env.EMAIL_PASS;
+  const apiKey = process.env.EMAIL_PASS; // This is correct
   const senderEmail = process.env.EMAIL_FROM;
   const senderName = "Mobitel";
   
+  // Fix: Check for EMAIL_PASS instead of BREVO_API_KEY
   if (!apiKey) {
-    throw new Error("BREVO_API_KEY is not configured");
+    throw new Error("EMAIL_PASS is not configured");
   }
   
   if (!senderEmail) {
     throw new Error("EMAIL_FROM is not configured");
   }
 
-  // const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-  //   method: 'POST',
-  //   headers: {
-  //     'api-key': apiKey,
-  //     'Content-Type': 'application/json',
-  //     'accept': 'application/json'
-  //   },
-  //   body: JSON.stringify({
-  //     sender: {
-  //       name: senderName,
-  //       email: senderEmail
-  //     },
-  //     to: [
-  //       {
-  //         email: email,
-  //         name: email.split('@')[0] // Optional: extract name from email
-  //       }
-  //     ],
-  //     subject: "Your Warranty Activation OTP",
-  //     textContent: `Your OTP code is: ${code}. It is valid for 10 minutes.`,
-  //     htmlContent: `
-  //       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-  //         <h2 style="color: #333;">Warranty Activation OTP</h2>
-  //         <p>Your One-Time Password for warranty activation is:</p>
-  //         <div style="background: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0; border-radius: 5px;">
-  //           <span style="font-size: 32px; font-weight: bold; letter-spacing: 10px; color: #2563eb;">${code}</span>
-  //         </div>
-  //         <p>This OTP is valid for <strong>10 minutes</strong>.</p>
-  //         <p>If you didn't request this code, please ignore this email.</p>
-  //         <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;">
-  //         <p style="color: #666; font-size: 12px;">This is an automated message, please do not reply.</p>
-  //       </div>
-  //     `,
-  //     // Optional: Add tags for tracking
-  //     tags: ['otp', 'warranty-activation']
-  //   })
-  // });
-
-
-const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-  method: 'POST',
-  headers: {
-    'api-key': apiKey,
-    'Content-Type': 'application/json',
-    'accept': 'application/json'
-  },
-  body: JSON.stringify({
-    sender: {
-      name: senderName,
-      email: senderEmail
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      'api-key': apiKey,
+      'Content-Type': 'application/json',
+      'accept': 'application/json'
     },
-    to: [
-      {
-        email: email,
-        name: email.split('@')[0]
-      }
-    ],
-    subject: "Your Mobitel Warranty Activation Code (Valid for 10 Minutes)",
-    textContent: `Your OTP code is: ${code}. It is valid for 10 minutes.`,
-    htmlContent: `<!DOCTYPE html>
+    body: JSON.stringify({
+      sender: {
+        name: senderName,
+        email: senderEmail
+      },
+      to: [
+        {
+          email: email,
+          name: email.split('@')[0]
+        }
+      ],
+      subject: "Your Mobitel Warranty Activation Code (Valid for 10 Minutes)",
+      textContent: `Your OTP code is: ${code}. It is valid for 10 minutes.`,
+      htmlContent: `<!DOCTYPE html>
                 <html lang="en">
                 <head>
                   <meta charset="UTF-8">
                   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                  <title>Your Mobitel Warranty Activation Code (Valid for 10 Minutes)</title>
+                  <title>Your Mobitel Warranty Activation Code</title>
                   <style>
                     body { 
                       font-family: -apple-system, BlinkMacSystemFont, 'San Francisco', 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; 
@@ -268,12 +230,16 @@ const response = await fetch('https://api.brevo.com/v3/smtp/email', {
                   </table>
                 </body>
                 </html>`
-                  })
-     });
+    })
+  });
 
-
-
-
+  // Fix: Get response data properly
+  let responseData;
+  try {
+    responseData = await response.json();
+  } catch (e) {
+    responseData = { message: 'Could not parse response' };
+  }
 
   if (!response.ok) {
     console.error('Brevo API Error Details:', {
@@ -281,7 +247,7 @@ const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       statusText: response.statusText,
       error: responseData
     });
-    throw new Error(`Failed to send email: ${responseData.message || 'Unknown error'}`);
+    throw new Error(`Failed to send email: ${responseData.message || response.statusText || 'Unknown error'}`);
   }
 
   console.log('Brevo API Response:', responseData);
@@ -296,8 +262,9 @@ export async function createOtp(email) {
   otpMap.set(token, { email, code, expiresAt });
 
   console.log(`Generated OTP for ${email}: ${code}`);
+  // Fix: Check for EMAIL_PASS instead of BREVO_API_KEY
   console.log('Environment check:', {
-    hasBrevoKey: !!process.env.BREVO_API_KEY,
+    hasEmailPass: !!process.env.EMAIL_PASS,
     hasEmailFrom: !!process.env.EMAIL_FROM
   });
 
