@@ -67,6 +67,7 @@ export async function action({ request }) {
     );
   }
 
+  // 1. Find or create the customer
   const customerResult = await findOrCreateCustomer(
     session,
     email,
@@ -89,6 +90,7 @@ export async function action({ request }) {
   }
   const customerId = customerResult.customerId;
 
+  // 2. Create Warranty metaobject, including customer reference field
   const warrantyResult = await createWarrantyMetaobject(session, {
     customerEmail: email,
     productName,
@@ -96,6 +98,7 @@ export async function action({ request }) {
     purchaseDate,
     orderNumber,
     serialNumber,
+    customerId, // NEW: also store the customer on the metaobject
   });
 
   if (!warrantyResult.ok) {
@@ -106,6 +109,7 @@ export async function action({ request }) {
   }
   const warrantyMetaobjectId = warrantyResult.metaobjectId;
 
+  // 3. Attach the metaobject to the customer metafield (list.metaobject_reference)
   const metafieldResult = await setCustomerWarrantyMetafield(
     session,
     customerId,
@@ -119,24 +123,21 @@ export async function action({ request }) {
     });
   }
 
-
+  // 4. Optionally update email marketing consent
   if (marketingConsentGiven) {
-  const marketingRes = await updateCustomerEmailMarketingConsent(
-    session,
-    customerId
-  );
+    const marketingRes = await updateCustomerEmailMarketingConsent(
+      session,
+      customerId
+    );
 
-  if (!marketingRes.ok) {
-    // You can choose to log and continue, or fail the whole request.
-    // Here we log but don't block warranty creation:
-    console.error("Failed to update email marketing consent", marketingRes.error);
-    // If you DO want to fail:
-    // return new Response(JSON.stringify({ error: marketingRes.error }), {
-    //   status: 500,
-    //   headers: { "Content-Type": "application/json" },
-    // });
+    if (!marketingRes.ok) {
+      console.error(
+        "Failed to update email marketing consent",
+        marketingRes.error
+      );
+      // You could choose to fail the request here if you prefer.
+    }
   }
-}
 
   return new Response(JSON.stringify({ success: true }), {
     status: 200,
@@ -284,6 +285,9 @@ async function findOrCreateCustomer(
 }
 
 // Create / upsert merchant-owned metaobject: warranty_activation_details
+// IMPORTANT: your metaobject definition must have a field with key "customer"
+// and type "customer_reference" (see:
+// https://shopify.dev/docs/apps/build/metafields/list-of-data-types#reference-types)
 async function createWarrantyMetaobject(session, input) {
   const warrantyHandle = `warranty-${input.orderNumber}-${input.serialNumber}`
     .toLowerCase()
@@ -298,6 +302,7 @@ async function createWarrantyMetaobject(session, input) {
       $purchaseDate: String!
       $orderNumber: String!
       $serialNumber: String!
+      $customerId: String!
     ) {
       metaobjectUpsert(
         handle: $handle
@@ -310,11 +315,12 @@ async function createWarrantyMetaobject(session, input) {
             { key: "product_order_invoice_number", value: $orderNumber }
             { key: "product_serial_number",        value: $serialNumber }
             { key: "status",                       value: "Pending" }
+            { key: "customer",                     value: $customerId }
           ]
         }
       ) {
         metaobject { id }
-        userErrors { field message }
+        userErrors { field message code }
       }
     }`;
 
@@ -329,6 +335,7 @@ async function createWarrantyMetaobject(session, input) {
     purchaseDate: input.purchaseDate,
     orderNumber: input.orderNumber,
     serialNumber: input.serialNumber,
+    customerId: input.customerId, // GID string for the customer
   });
 
   if (!res.ok) {
@@ -361,8 +368,6 @@ async function createWarrantyMetaobject(session, input) {
   return { ok: true, metaobjectId };
 }
 
-
-// Updates the customer's email marketing consent to SUBSCRIBED
 // Updates the customer's email marketing consent to SUBSCRIBED
 async function updateCustomerEmailMarketingConsent(session, customerId) {
   const mutation = `#graphql
@@ -427,9 +432,6 @@ async function updateCustomerEmailMarketingConsent(session, customerId) {
 
   return { ok: true };
 }
-
-
-
 
 // Link the warranty_activation_details metaobject to the Customer via a metafield
 // Definition: Customer metafield custom.warranty_activation_details
