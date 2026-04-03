@@ -4,13 +4,6 @@ import { useAppBridge } from "@shopify/app-bridge-react";
 import { authenticate } from "../shopify.server";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 
-/**
- * Server-side loader:
- * - Authenticates the admin
- * - Fetches customers with the warranty_activation_details metafield
- * - Filters customers so only those WITH warranty data are returned
- * - Returns { customers } for useLoaderData on the client
- */
 export const loader = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
 
@@ -79,7 +72,6 @@ export const loader = async ({ request }) => {
       const customersData = responseJson.data.customers;
 
       const customersWithWarranties = customersData.edges
-        // Only keep customers that have the metafield value AND at least one reference
         .filter((edge) => {
           const m = edge.node.metafield;
           return (
@@ -99,7 +91,6 @@ export const loader = async ({ request }) => {
               const warranty = refEdge.node;
               const warrantyData = {};
 
-              // Convert metaobject fields array into a simple key/value object
               warranty.fields.forEach((field) => {
                 warrantyData[field.key] = field.value;
               });
@@ -128,12 +119,9 @@ export const loader = async ({ request }) => {
       cursor = customersData.pageInfo.endCursor;
     }
 
-    // Data routers (React Router / Remix-style) allow returning plain objects from loaders.
-    // They’ll be available in the component via useLoaderData().
     return { customers: allCustomers };
   } catch (error) {
     console.error("Error fetching customers:", error);
-    // Surface an empty list and an error; you can also throw a Response if you prefer.
     return { customers: [], error: error.message };
   }
 };
@@ -144,22 +132,17 @@ export default function WarrantyListing() {
   const initialError = loaderData?.error || null;
 
   const [customers, setCustomers] = useState(initialCustomers);
-  const [loading, setLoading] = useState(false); // loader already ran once
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(initialError);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const shopify = useAppBridge();
 
-  // If loader data changes (e.g., navigation), sync to state
   useEffect(() => {
     setCustomers(initialCustomers);
     setError(initialError);
   }, [initialCustomers, initialError]);
 
-  /**
-   * Refresh customers by calling the same route again.
-   * We set Accept: application/json so the server responds with the loader JSON data.
-   */
   const fetchCustomers = async () => {
     try {
       setLoading(true);
@@ -168,7 +151,7 @@ export default function WarrantyListing() {
       const response = await fetch(window.location.pathname, {
         method: "GET",
         headers: {
-          "Accept": "application/json",
+          Accept: "application/json",
         },
       });
 
@@ -202,17 +185,22 @@ export default function WarrantyListing() {
   };
 
   const filteredCustomers = customers.filter((customer) => {
-    if (!searchTerm) return true;
+    const rawTerm =
+      typeof searchTerm === "string"
+        ? searchTerm
+        : searchTerm?.toString() ?? "";
+    const term = rawTerm.toLowerCase().trim();
 
-    const term = searchTerm.toLowerCase();
-    const name = customer.displayName?.toLowerCase() || "";
-    const email = customer.email?.toLowerCase() || "";
-    const phone = customer.phone || "";
+    if (!term) return true;
+
+    const name = (customer.displayName || "").toString().toLowerCase();
+    const email = (customer.email || "").toString().toLowerCase();
+    const phone = (customer.phone || "").toString();
 
     return (
       name.includes(term) ||
       email.includes(term) ||
-      phone.includes(searchTerm)
+      phone.includes(rawTerm)
     );
   });
 
@@ -258,7 +246,23 @@ export default function WarrantyListing() {
             <s-search-field
               placeholder="Search by name, email, or phone"
               value={searchTerm}
-              onChange={setSearchTerm}
+              onChange={(value) => {
+                if (typeof value === "string") {
+                  setSearchTerm(value);
+                } else if (
+                  value &&
+                  typeof value.target?.value === "string"
+                ) {
+                  setSearchTerm(value.target.value);
+                } else if (
+                  value &&
+                  typeof value.detail?.value === "string"
+                ) {
+                  setSearchTerm(value.detail.value);
+                } else {
+                  setSearchTerm("");
+                }
+              }}
               clearable
             />
 
@@ -296,7 +300,6 @@ export default function WarrantyListing() {
                   { content: "Actions" },
                 ]}
                 rows={filteredCustomers.map((customer) => [
-                  // Customer
                   <div>
                     <s-text variant="bodyMd" fontWeight="bold">
                       {customer.displayName}
@@ -307,8 +310,6 @@ export default function WarrantyListing() {
                       </s-text>
                     )}
                   </div>,
-
-                  // Contact
                   <div>
                     <s-text variant="bodyMd">
                       {customer.email || "No email"}
@@ -317,8 +318,6 @@ export default function WarrantyListing() {
                       {customer.phone || "No phone"}
                     </s-text>
                   </div>,
-
-                  // Warranties
                   <s-stack direction="inline" gap="tight">
                     <s-badge tone="info">
                       {customer.warranties.length} warranty(s)
@@ -327,11 +326,7 @@ export default function WarrantyListing() {
                       (w) => w.status === "Pending",
                     ) && <s-badge tone="warning">Pending Review</s-badge>}
                   </s-stack>,
-
-                  // Registered Date
                   new Date(customer.createdAt).toLocaleDateString(),
-
-                  // Actions
                   <s-button
                     size="slim"
                     onClick={() => setSelectedCustomer(customer)}
@@ -345,7 +340,6 @@ export default function WarrantyListing() {
         </s-layout-section>
       </s-layout>
 
-      {/* Customer Details Modal */}
       {selectedCustomer && (
         <s-modal
           open={true}
