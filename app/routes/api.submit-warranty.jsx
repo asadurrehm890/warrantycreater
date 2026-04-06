@@ -63,7 +63,7 @@ export async function action({ request }) {
       {
         status: 500,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 
@@ -79,7 +79,7 @@ export async function action({ request }) {
       city: town,
       country,
       zip: postalCode,
-    }
+    },
   );
 
   if (!customerResult.ok) {
@@ -90,8 +90,7 @@ export async function action({ request }) {
   }
   const customerId = customerResult.customerId;
 
-
-    // 1b. Add the "warrantyregistered" tag to the customer
+  // 1b. Add the "warrantyregistered" tag to the customer
   const tagResult = await addWarrantyTagToCustomer(session, customerId);
 
   if (!tagResult.ok) {
@@ -112,7 +111,7 @@ export async function action({ request }) {
     purchaseDate,
     orderNumber,
     serialNumber,
-    customerId, // NEW: also store the customer on the metaobject
+    customerId, // also store the customer on the metaobject
   });
 
   if (!warrantyResult.ok) {
@@ -124,10 +123,11 @@ export async function action({ request }) {
   const warrantyMetaobjectId = warrantyResult.metaobjectId;
 
   // 3. Attach the metaobject to the customer metafield (list.metaobject_reference)
+  //    This now APPENDS to existing list instead of overwriting it.
   const metafieldResult = await setCustomerWarrantyMetafield(
     session,
     customerId,
-    warrantyMetaobjectId
+    warrantyMetaobjectId,
   );
 
   if (!metafieldResult.ok) {
@@ -141,13 +141,13 @@ export async function action({ request }) {
   if (marketingConsentGiven) {
     const marketingRes = await updateCustomerEmailMarketingConsent(
       session,
-      customerId
+      customerId,
     );
 
     if (!marketingRes.ok) {
       console.error(
         "Failed to update email marketing consent",
-        marketingRes.error
+        marketingRes.error,
       );
       // You could choose to fail the request here if you prefer.
     }
@@ -211,7 +211,7 @@ async function findOrCreateCustomer(
   firstName,
   lastName,
   phone,
-  address
+  address,
 ) {
   const searchQuery = `#graphql
     query FindCustomerByEmail($query: String!) {
@@ -434,12 +434,12 @@ async function updateCustomerEmailMarketingConsent(session, customerId) {
   if (userErrors && userErrors.length > 0) {
     console.error(
       "customerEmailMarketingConsentUpdate userErrors",
-      userErrors
+      userErrors,
     );
     return {
       ok: false,
       error: `customerEmailMarketingConsentUpdate errors: ${JSON.stringify(
-        userErrors
+        userErrors,
       )}`,
     };
   }
@@ -450,11 +450,67 @@ async function updateCustomerEmailMarketingConsent(session, customerId) {
 // Link the warranty_activation_details metaobject to the Customer via a metafield
 // Definition: Customer metafield custom.warranty_activation_details
 // Type: list.metaobject_reference
+// This version APPENDS the new metaobject id instead of overwriting.
 async function setCustomerWarrantyMetafield(
   session,
   customerId,
-  warrantyMetaobjectId
+  warrantyMetaobjectId,
 ) {
+  // 1. Read existing metafield value (if any)
+  const getMetafieldQuery = `#graphql
+    query CustomerWarrantyMetafield($id: ID!) {
+      customer(id: $id) {
+        id
+        metafield(namespace: "custom", key: "warranty_activation_details") {
+          id
+          type
+          value
+        }
+      }
+    }
+  `;
+
+  const existingRes = await callAdminGraphQL(session, getMetafieldQuery, {
+    id: customerId,
+  });
+
+  if (!existingRes.ok) {
+    return {
+      ok: false,
+      error: `Failed to read existing warranty metafield: ${existingRes.error}`,
+    };
+  }
+
+  const existingMetafield =
+    existingRes.data &&
+    existingRes.data.customer &&
+    existingRes.data.customer.metafield;
+
+  let existingIds = [];
+
+  if (existingMetafield && existingMetafield.value) {
+    try {
+      const parsed = JSON.parse(existingMetafield.value);
+      if (Array.isArray(parsed)) {
+        existingIds = parsed;
+      }
+    } catch (e) {
+      console.warn(
+        "Could not parse existing warranty metafield value, resetting to single entry",
+        existingMetafield.value,
+      );
+      existingIds = [];
+    }
+  }
+
+  // 2. Append new ID if not already in the list
+  if (!existingIds.includes(warrantyMetaobjectId)) {
+    existingIds.push(warrantyMetaobjectId);
+  }
+
+  const warrantyIdsJson = JSON.stringify(existingIds);
+
+  // 3. Write merged list back with metafieldsSet
   const mutation = `#graphql
     mutation SetCustomerWarranty(
       $customerId: ID!
@@ -475,9 +531,6 @@ async function setCustomerWarrantyMetafield(
         userErrors { field message }
       }
     }`;
-
-  // Single-element list for now
-  const warrantyIdsJson = JSON.stringify([warrantyMetaobjectId]);
 
   const res = await callAdminGraphQL(session, mutation, {
     customerId,
@@ -503,7 +556,6 @@ async function setCustomerWarrantyMetafield(
 
   return { ok: true };
 }
-
 
 // Add this helper to apply the "warrantyregistered" tag to a customer
 async function addWarrantyTagToCustomer(session, customerId) {
