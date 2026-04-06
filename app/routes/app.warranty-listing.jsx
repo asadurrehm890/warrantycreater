@@ -334,57 +334,17 @@ export default function WarrantyListingPage() {
                             </s-text>
                           </s-stack>
 
-                          {/* Editable fields form (start/end date, status) and Send Email */}
+                          {/* Save Warranty form */}
                           <fetcher.Form method="post">
-                            {/* Hidden ID for the metaobject to update */}
-                            <input
-                              type="hidden"
-                              name="metaobjectId"
-                              value={warranty.id}
-                            />
-
-                            {/* Hidden fields used for email sending */}
-                            <input
-                              type="hidden"
-                              name="customerEmail"
-                              value={warranty.customerEmail || customer.email || ""}
-                            />
-                            <input
-                              type="hidden"
-                              name="customerName"
-                              value={customer.displayName || ""}
-                            />
-                            <input
-                              type="hidden"
-                              name="productName"
-                              value={warranty.productName || ""}
-                            />
-                            <input
-                              type="hidden"
-                              name="orderInvoiceNumber"
-                              value={warranty.orderInvoiceNumber || ""}
-                            />
-                            <input
-                              type="hidden"
-                              name="serialNumber"
-                              value={warranty.serialNumber || ""}
-                            />
-                            <input
-                              type="hidden"
-                              name="purchaseDate"
-                              value={warranty.purchaseDate || ""}
-                            />
-                            <input
-                              type="hidden"
-                              name="purchaseSource"
-                              value={warranty.purchaseSource || ""}
-                            />
-
-                            {/* Intent field – default; overridden by button clicks */}
                             <input
                               type="hidden"
                               name="_intent"
                               value="saveWarranty"
+                            />
+                            <input
+                              type="hidden"
+                              name="metaobjectId"
+                              value={warranty.id}
                             />
 
                             {/* Polaris fields as actual form controls */}
@@ -428,29 +388,90 @@ export default function WarrantyListingPage() {
                             </s-stack>
 
                             <s-stack direction="inline" gap="base">
-                              {/* Save Warranty button */}
                               <s-button
                                 type="submit"
-                                name="_intent"
-                                value="saveWarranty"
                                 {...(isSubmitting ? { loading: true } : {})}
                               >
                                 Save warranty
                               </s-button>
 
-                              {/* Send Email button */}
-                              <s-button
-                                type="submit"
-                                variant="secondary"
-                                name="_intent"
-                                value="sendEmail"
-                              >
+                              {fetcher.data && !fetcher.data.ok && !fetcher.data.sentEmail && (
+                                <s-text tone="critical">
+                                  {fetcher.data.error || "Action failed."}
+                                </s-text>
+                              )}
+                            </s-stack>
+                          </fetcher.Form>
+
+                          {/* Send Email form (separate so _intent is always sendEmail) */}
+                          <fetcher.Form method="post">
+                            <input
+                              type="hidden"
+                              name="_intent"
+                              value="sendEmail"
+                            />
+
+                            {/* Email-related hidden fields */}
+                            <input
+                              type="hidden"
+                              name="customerEmail"
+                              value={warranty.customerEmail || customer.email || ""}
+                            />
+                            <input
+                              type="hidden"
+                              name="customerName"
+                              value={customer.displayName || ""}
+                            />
+                            <input
+                              type="hidden"
+                              name="productName"
+                              value={warranty.productName || ""}
+                            />
+                            <input
+                              type="hidden"
+                              name="orderInvoiceNumber"
+                              value={warranty.orderInvoiceNumber || ""}
+                            />
+                            <input
+                              type="hidden"
+                              name="serialNumber"
+                              value={warranty.serialNumber || ""}
+                            />
+                            <input
+                              type="hidden"
+                              name="purchaseDate"
+                              value={warranty.purchaseDate || ""}
+                            />
+                            <input
+                              type="hidden"
+                              name="purchaseSource"
+                              value={warranty.purchaseSource || ""}
+                            />
+                            {/* Current status and dates for email content */}
+                            <input
+                              type="hidden"
+                              name="status"
+                              value={normalizedStatus}
+                            />
+                            <input
+                              type="hidden"
+                              name="startDate"
+                              value={warranty.startDate || ""}
+                            />
+                            <input
+                              type="hidden"
+                              name="endDate"
+                              value={warranty.endDate || ""}
+                            />
+
+                            <s-stack direction="inline" gap="base">
+                              <s-button type="submit" variant="secondary">
                                 Send email
                               </s-button>
 
-                              {fetcher.data && !fetcher.data.ok && (
+                              {fetcher.data && !fetcher.data.ok && fetcher.data.sentEmail === false && (
                                 <s-text tone="critical">
-                                  {fetcher.data.error || "Action failed."}
+                                  {fetcher.data.error || "Failed to send email."}
                                 </s-text>
                               )}
                             </s-stack>
