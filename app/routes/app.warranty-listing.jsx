@@ -334,7 +334,7 @@ export default function WarrantyListingPage() {
                             </s-text>
                           </s-stack>
 
-                          {/* Save Warranty form */}
+                          {/* Save Warranty form: fields + Save button */}
                           <fetcher.Form method="post">
                             <input
                               type="hidden"
@@ -347,7 +347,7 @@ export default function WarrantyListingPage() {
                               value={warranty.id}
                             />
 
-                            {/* Polaris fields as actual form controls */}
+                            {/* Editable fields (start, end, status) */}
                             <s-stack direction="inline" gap="base">
                               <s-date-field
                                 name="startDate"
@@ -387,7 +387,17 @@ export default function WarrantyListingPage() {
                               </s-select>
                             </s-stack>
 
-                            <s-stack direction="inline" gap="base">
+                            {/* Buttons row: horizontal with margin-top */}
+                            <div
+                              style={{
+                                display: "flex",
+                                gap: "8px",
+                                marginTop: "12px",
+                                alignItems: "center",
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              {/* Save Warranty button submits this form */}
                               <s-button
                                 type="submit"
                                 {...(isSubmitting ? { loading: true } : {})}
@@ -395,86 +405,60 @@ export default function WarrantyListingPage() {
                                 Save warranty
                               </s-button>
 
-                              {fetcher.data && !fetcher.data.ok && !fetcher.data.sentEmail && (
+                              {/* Send Email button triggers fetcher.submit separately */}
+                              <s-button
+                                type="button"
+                                variant="secondary"
+                                onClick={() => {
+                                  const fd = new FormData();
+                                  fd.append("_intent", "sendEmail");
+                                  fd.append(
+                                    "customerEmail",
+                                    warranty.customerEmail || customer.email || "",
+                                  );
+                                  fd.append(
+                                    "customerName",
+                                    customer.displayName || "",
+                                  );
+                                  fd.append(
+                                    "productName",
+                                    warranty.productName || "",
+                                  );
+                                  fd.append(
+                                    "orderInvoiceNumber",
+                                    warranty.orderInvoiceNumber || "",
+                                  );
+                                  fd.append(
+                                    "serialNumber",
+                                    warranty.serialNumber || "",
+                                  );
+                                  fd.append(
+                                    "purchaseDate",
+                                    warranty.purchaseDate || "",
+                                  );
+                                  fd.append(
+                                    "purchaseSource",
+                                    warranty.purchaseSource || "",
+                                  );
+                                  fd.append("status", normalizedStatus);
+                                  fd.append(
+                                    "startDate",
+                                    warranty.startDate || "",
+                                  );
+                                  fd.append("endDate", warranty.endDate || "");
+
+                                  fetcher.submit(fd, { method: "post" });
+                                }}
+                              >
+                                Send email
+                              </s-button>
+
+                              {fetcher.data && !fetcher.data.ok && (
                                 <s-text tone="critical">
                                   {fetcher.data.error || "Action failed."}
                                 </s-text>
                               )}
-                            </s-stack>
-                          </fetcher.Form>
-
-                          {/* Send Email form (separate so _intent is always sendEmail) */}
-                          <fetcher.Form method="post">
-                            <input
-                              type="hidden"
-                              name="_intent"
-                              value="sendEmail"
-                            />
-
-                            {/* Email-related hidden fields */}
-                            <input
-                              type="hidden"
-                              name="customerEmail"
-                              value={warranty.customerEmail || customer.email || ""}
-                            />
-                            <input
-                              type="hidden"
-                              name="customerName"
-                              value={customer.displayName || ""}
-                            />
-                            <input
-                              type="hidden"
-                              name="productName"
-                              value={warranty.productName || ""}
-                            />
-                            <input
-                              type="hidden"
-                              name="orderInvoiceNumber"
-                              value={warranty.orderInvoiceNumber || ""}
-                            />
-                            <input
-                              type="hidden"
-                              name="serialNumber"
-                              value={warranty.serialNumber || ""}
-                            />
-                            <input
-                              type="hidden"
-                              name="purchaseDate"
-                              value={warranty.purchaseDate || ""}
-                            />
-                            <input
-                              type="hidden"
-                              name="purchaseSource"
-                              value={warranty.purchaseSource || ""}
-                            />
-                            {/* Current status and dates for email content */}
-                            <input
-                              type="hidden"
-                              name="status"
-                              value={normalizedStatus}
-                            />
-                            <input
-                              type="hidden"
-                              name="startDate"
-                              value={warranty.startDate || ""}
-                            />
-                            <input
-                              type="hidden"
-                              name="endDate"
-                              value={warranty.endDate || ""}
-                            />
-
-                            <s-stack direction="inline" gap="base">
-                              <s-button type="submit" variant="secondary">
-                                Send email
-                              </s-button>
-
-                              {fetcher.data && !fetcher.data.ok && fetcher.data.sentEmail === false && (
-                                <s-text tone="critical">
-                                  {fetcher.data.error || "Failed to send email."}
-                                </s-text>
-                              )}
-                            </s-stack>
+                            </div>
                           </fetcher.Form>
                         </s-box>
                       );
