@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useLoaderData, useFetcher } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
@@ -50,7 +51,7 @@ export const loader = async ({ request }) => {
     {
       variables: {
         query: "tag:'warrantyregistered'",
-        first: 50,         // customers per page
+        first: 50,        // customers per page
         warrantiesFirst: 20, // warranties per customer
       },
     },
@@ -62,8 +63,7 @@ export const loader = async ({ request }) => {
 
   const customers = customerEdges.map(({ node }) => {
     const metafield = node.metafield;
-    const warrantyNodes =
-      metafield?.references?.nodes?.filter(Boolean) ?? [];
+    const warrantyNodes = metafield?.references?.nodes?.filter(Boolean) ?? [];
 
     const warranties = warrantyNodes.map((mo) => ({
       id: mo.id,
@@ -99,7 +99,10 @@ export const action = async ({ request }) => {
   const metaobjectId = formData.get("metaobjectId");
   const startDate = (formData.get("startDate") || "").toString().trim();
   const endDate = (formData.get("endDate") || "").toString().trim();
-  const status = (formData.get("status") || "").toString().trim();
+  const rawStatus = (formData.get("status") || "").toString().trim();
+
+  const allowedStatuses = ["Approved", "Pending", "Rejected", "In Process"];
+  const status = allowedStatuses.includes(rawStatus) ? rawStatus : "Pending";
 
   if (!metaobjectId) {
     return {
@@ -108,12 +111,11 @@ export const action = async ({ request }) => {
     };
   }
 
-  const fields = [];
-
-  // Only send fields that have some value; adjust if you want to allow clearing
-  fields.push({ key: "start_date", value: startDate });
-  fields.push({ key: "end_date", value: endDate });
-  fields.push({ key: "status", value: status });
+  const fields = [
+    { key: "start_date", value: startDate },
+    { key: "end_date", value: endDate },
+    { key: "status", value: status },
+  ];
 
   const response = await admin.graphql(
     `#graphql
@@ -175,11 +177,11 @@ export default function WarrantyListingPage() {
     ["loading", "submitting"].includes(fetcher.state) &&
     fetcher.formMethod === "POST";
 
-  // Optional: show a toast when an update succeeds
-  if (fetcher.data?.ok && fetcher.state === "idle") {
-    // basic guard so toast doesn't spam too much; a more robust approach would use useEffect
-    shopify.toast?.show?.("Warranty updated");
-  }
+  useEffect(() => {
+    if (fetcher.data?.ok && fetcher.state === "idle") {
+      shopify.toast?.show?.("Warranty updated");
+    }
+  }, [fetcher.data?.ok, fetcher.state, shopify]);
 
   return (
     <s-page heading="Warranty registrations">
@@ -187,171 +189,147 @@ export default function WarrantyListingPage() {
         {customers.length === 0 ? (
           <s-paragraph>
             No customers found with the{" "}
-            <s-text variant="bodyStrong">warrantyregistered</s-text> tag.
+            <s-text type="strong">warrantyregistered</s-text> tag.
           </s-paragraph>
         ) : (
-          customers.map((customer) => (
-            <s-box
-              key={customer.id}
-              padding="base"
-              borderWidth="base"
-              borderRadius="base"
-              background="subdued"
-              style={{ marginBottom: "16px" }}
-            >
-              <s-stack direction="inline" gap="base" alignment="center">
-                <s-text variant="headingMd">
-                  {customer.displayName || "Unnamed customer"}
-                </s-text>
-                <s-badge tone="subdued">
-                  {customer.email || "No email"}
-                </s-badge>
-                <s-badge tone="subdued">
-                  {customer.phone || "No phone"}
-                </s-badge>
-                <s-button
-                  variant="tertiary"
-                  onClick={() =>
-                    shopify.intents.invoke?.("edit:shopify/Customer", {
-                      value: customer.id,
-                    })
-                  }
-                >
-                  View customer
-                </s-button>
-              </s-stack>
+          <s-stack direction="block" gap="base">
+            {customers.map((customer) => (
+              <s-box
+                key={customer.id}
+                padding="base"
+                borderWidth="base"
+                borderRadius="base"
+                background="subdued"
+              >
+                {/* Customer header */}
+                <s-stack direction="inline" gap="base" alignItems="center">
+                  <s-text type="strong">
+                    {customer.displayName || "Unnamed customer"}
+                  </s-text>
+                  <s-badge tone="info">
+                    {customer.email || "No email"}
+                  </s-badge>
+                  <s-badge tone="info">
+                    {customer.phone || "No phone"}
+                  </s-badge>
+                  <s-button
+                    variant="tertiary"
+                    onClick={() =>
+                      shopify.intents.invoke?.("edit:shopify/Customer", {
+                        value: customer.id,
+                      })
+                    }
+                  >
+                    View customer
+                  </s-button>
+                </s-stack>
 
-              {customer.warranties.length === 0 ? (
-                <s-paragraph>
-                  This customer has no warranty activation records linked.
-                </s-paragraph>
-              ) : (
-                <div style={{ marginTop: "12px" }}>
-                  {customer.warranties.map((warranty) => (
-                    <s-box
-                      key={warranty.id}
-                      padding="base"
-                      borderWidth="base"
-                      borderRadius="base"
-                      background="surface"
-                      style={{ marginBottom: "12px" }}
-                    >
-                      {/* Read-only fields */}
-                      <s-heading level={3}>
-                        {warranty.productName || "Warranty record"}
-                      </s-heading>
-                      <s-stack direction="block" gap="tight">
-                        <s-text>
-                          <strong>Customer email:</strong>{" "}
-                          {warranty.customerEmail || "—"}
-                        </s-text>
-                        <s-text>
-                          <strong>Purchase source:</strong>{" "}
-                          {warranty.purchaseSource || "—"}
-                        </s-text>
-                        <s-text>
-                          <strong>Purchase date:</strong>{" "}
-                          {warranty.purchaseDate || "—"}
-                        </s-text>
-                        <s-text>
-                          <strong>Order / Invoice #:</strong>{" "}
-                          {warranty.orderInvoiceNumber || "—"}
-                        </s-text>
-                        <s-text>
-                          <strong>Serial number:</strong>{" "}
-                          {warranty.serialNumber || "—"}
-                        </s-text>
-                      </s-stack>
+                {/* Warranties for this customer */}
+                {customer.warranties.length === 0 ? (
+                  <s-paragraph>
+                    This customer has no warranty activation records linked.
+                  </s-paragraph>
+                ) : (
+                  <s-stack direction="block" gap="base">
+                    {customer.warranties.map((warranty) => (
+                      <s-box
+                        key={warranty.id}
+                        padding="base"
+                        borderWidth="base"
+                        borderRadius="base"
+                        background="base"
+                      >
+                        {/* Read-only warranty fields */}
+                        <s-heading>
+                          {warranty.productName || "Warranty record"}
+                        </s-heading>
 
-                      {/* Editable fields form */}
-                      <fetcher.Form method="post">
-                        <input
-                          type="hidden"
-                          name="metaobjectId"
-                          value={warranty.id}
-                        />
+                        <s-stack direction="block" gap="none">
+                          <s-text>
+                            <s-text type="strong">Customer email:</s-text>{" "}
+                            {warranty.customerEmail || "—"}
+                          </s-text>
+                          <s-text>
+                            <s-text type="strong">Purchase source:</s-text>{" "}
+                            {warranty.purchaseSource || "—"}
+                          </s-text>
+                          <s-text>
+                            <s-text type="strong">Purchase date:</s-text>{" "}
+                            {warranty.purchaseDate || "—"}
+                          </s-text>
+                          <s-text>
+                            <s-text type="strong">Order / Invoice #:</s-text>{" "}
+                            {warranty.orderInvoiceNumber || "—"}
+                          </s-text>
+                          <s-text>
+                            <s-text type="strong">Serial number:</s-text>{" "}
+                            {warranty.serialNumber || "—"}
+                          </s-text>
+                        </s-stack>
 
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns:
-                              "repeat(auto-fit, minmax(180px, 1fr))",
-                            gap: "12px",
-                            marginTop: "12px",
-                          }}
-                        >
-                          <div>
-                            <label
-                              style={{ display: "block", marginBottom: 4 }}
-                            >
-                              Start date
-                            </label>
-                            <input
-                              type="date"
+                        {/* Editable fields form (start/end date, status) */}
+                        <fetcher.Form method="post">
+                          {/* Hidden ID for the metaobject to update */}
+                          <input
+                            type="hidden"
+                            name="metaobjectId"
+                            value={warranty.id}
+                          />
+
+                          {/* Use Polaris fields as form controls */}
+                          <s-stack direction="inline" gap="base">
+                            <s-date-field
                               name="startDate"
+                              label="Start date"
                               defaultValue={warranty.startDate || ""}
-                              style={{ width: "100%" }}
                             />
-                          </div>
-                          <div>
-                            <label
-                              style={{ display: "block", marginBottom: 4 }}
-                            >
-                              End date
-                            </label>
-                            <input
-                              type="date"
+                            <s-date-field
                               name="endDate"
+                              label="End date"
                               defaultValue={warranty.endDate || ""}
-                              style={{ width: "100%" }}
                             />
-                          </div>
-                          <div>
-                            <label
-                              style={{ display: "block", marginBottom: 4 }}
+                            <s-select
+                              name="status"
+                              label="Status"
+                              defaultValue={
+                                ["Approved", "Pending", "Rejected", "In Process"].includes(
+                                  warranty.status,
+                                )
+                                  ? warranty.status
+                                  : "Pending"
+                              }
                             >
-                              Status
-                            </label>
-                            <select
-                            name="status"
-                            defaultValue={
-                              ["Approved", "Pending", "Rejected", "In Process"].includes(
-                                warranty.status,
-                              )
-                                ? warranty.status
-                                : "Pending"
-                            }
-                            style={{ width: "100%" }}
-                          >
-                            <option value="Pending">Pending</option>
-                            <option value="Approved">Approved</option>
-                            <option value="Rejected">Rejected</option>
-                            <option value="In Process">In Process</option>
-                          </select>
-                          </div>
-                        </div>
+                              <s-option value="Pending">Pending</s-option>
+                              <s-option value="Approved">Approved</s-option>
+                              <s-option value="Rejected">Rejected</s-option>
+                              <s-option value="In Process">
+                                In Process
+                              </s-option>
+                            </s-select>
+                          </s-stack>
 
-                        <div style={{ marginTop: "12px" }}>
-                          <s-button
-                            type="submit"
-                            {...(isSubmitting ? { loading: true } : {})}
-                          >
-                            Save warranty
-                          </s-button>
-                          {fetcher.data && !fetcher.data.ok && (
-                            <s-text tone="critical" as="p">
-                              {fetcher.data.error ||
-                                "Failed to update warranty."}
-                            </s-text>
-                          )}
-                        </div>
-                      </fetcher.Form>
-                    </s-box>
-                  ))}
-                </div>
-              )}
-            </s-box>
-          ))
+                          <s-stack direction="inline" gap="base">
+                            <s-button
+                              type="submit"
+                              {...(isSubmitting ? { loading: true } : {})}
+                            >
+                              Save warranty
+                            </s-button>
+                            {fetcher.data && !fetcher.data.ok && (
+                              <s-text tone="critical">
+                                {fetcher.data.error ||
+                                  "Failed to update warranty."}
+                              </s-text>
+                            )}
+                          </s-stack>
+                        </fetcher.Form>
+                      </s-box>
+                    ))}
+                  </s-stack>
+                )}
+              </s-box>
+            ))}
+          </s-stack>
         )}
       </s-section>
     </s-page>
