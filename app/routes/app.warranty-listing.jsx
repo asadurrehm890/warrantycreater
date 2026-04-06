@@ -52,8 +52,8 @@ export const loader = async ({ request }) => {
     {
       variables: {
         query: "tag:'warrantyregistered'",
-        first: 50,
-        warrantiesFirst: 20,
+        first: 50,         // customers per page
+        warrantiesFirst: 20, // warranties per customer
       },
     },
   );
@@ -92,7 +92,9 @@ export const loader = async ({ request }) => {
   return { customers };
 };
 
-// Action: handles two intents
+// Action: handles two intents:
+// - saveWarranty: update metaobject fields (start_date, end_date, status)
+// - sendEmail: send a warranty status email via Brevo
 export const action = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
   const formData = await request.formData();
@@ -149,7 +151,7 @@ export const action = async ({ request }) => {
     }
   }
 
-  // Default: saveWarranty intent
+  // Default: saveWarranty intent (update metaobject)
   const metaobjectId = formData.get("metaobjectId");
   const startDate = (formData.get("startDate") || "").toString().trim();
   const endDate = (formData.get("endDate") || "").toString().trim();
@@ -241,454 +243,249 @@ export default function WarrantyListingPage() {
     }
   }, [fetcher.data?.ok, fetcher.data?.sentEmail, fetcher.state, shopify]);
 
-  const getStatusBadgeTone = (status) => {
-    switch (status) {
-      case "Approved":
-        return "success";
-      case "Pending":
-        return "info";
-      case "Rejected":
-        return "critical";
-      case "In Process":
-        return "attention";
-      default:
-        return "info";
-    }
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "—";
-    try {
-      return new Date(dateString).toLocaleDateString();
-    } catch {
-      return dateString;
-    }
-  };
-
   return (
-    <s-page
-      title="Warranty Registrations"
-      subtitle="Manage and track customer warranty claims"
-      primaryAction={
-        <s-button
-          variant="primary"
-          onClick={() => shopify.toast?.show?.("Export feature coming soon")}
-        >
-          Export all
-        </s-button>
-      }
-    >
-      {customers.length === 0 ? (
-        <s-empty-state>
-          <s-empty-state-content>
-            <s-text variant="headingMd">No warranty registrations</s-text>
-            <s-paragraph>
-              No customers found with the{" "}
-              <s-text variant="bodyStrong">warrantyregistered</s-text> tag.
-            </s-paragraph>
-          </s-empty-state-content>
-        </s-empty-state>
-      ) : (
-        <s-layout>
-          {/* Summary Section */}
-          <s-layout-section>
-            <s-card>
-              <s-card-header>
-                <s-text variant="headingMd">Summary</s-text>
-              </s-card-header>
-              <s-card-section>
-                <s-grid columns="4">
-                  <s-box>
-                    <s-text variant="bodySm" tone="subdued">
-                      Total Customers
-                    </s-text>
-                    <s-text variant="headingLg">
-                      {customers.length}
-                    </s-text>
-                  </s-box>
-                  <s-box>
-                    <s-text variant="bodySm" tone="subdued">
-                      Total Warranties
-                    </s-text>
-                    <s-text variant="headingLg">
-                      {customers.reduce(
-                        (sum, c) => sum + c.warranties.length,
-                        0
-                      )}
-                    </s-text>
-                  </s-box>
-                  <s-box>
-                    <s-text variant="bodySm" tone="subdued">
-                      Approved
-                    </s-text>
-                    <s-text variant="headingLg" tone="success">
-                      {customers.reduce(
-                        (sum, c) =>
-                          sum +
-                          c.warranties.filter((w) => w.status === "Approved")
-                            .length,
-                        0
-                      )}
-                    </s-text>
-                  </s-box>
-                  <s-box>
-                    <s-text variant="bodySm" tone="subdued">
-                      Pending
-                    </s-text>
-                    <s-text variant="headingLg" tone="info">
-                      {customers.reduce(
-                        (sum, c) =>
-                          sum +
-                          c.warranties.filter((w) => w.status === "Pending")
-                            .length,
-                        0
-                      )}
-                    </s-text>
-                  </s-box>
-                </s-grid>
-              </s-card-section>
-            </s-card>
-          </s-layout-section>
+    <s-page heading="Warranty registrations">
+      <s-section heading="Customers with warrantyregistered tag">
+        {customers.length === 0 ? (
+          <s-paragraph>
+            No customers found with the{" "}
+            <s-text variant="bodyStrong">warrantyregistered</s-text> tag.
+          </s-paragraph>
+        ) : (
+          <s-stack direction="block" gap="base">
+            {customers.map((customer) => (
+              <s-box
+                key={customer.id}
+                padding="base"
+                borderWidth="base"
+                borderRadius="base"
+                background="subdued"
+              >
+                {/* Customer header */}
+                <s-stack direction="inline" gap="base" alignItems="center">
+                  <s-text variant="bodyStrong">
+                    {customer.displayName || "Unnamed customer"}
+                  </s-text>
+                  <s-badge tone="info">
+                    {customer.email || "No email"}
+                  </s-badge>
+                  <s-badge tone="info">
+                    {customer.phone || "No phone"}
+                  </s-badge>
+                  <s-button
+                    variant="tertiary"
+                    onClick={() =>
+                      shopify.intents.invoke?.("edit:shopify/Customer", {
+                        value: customer.id,
+                      })
+                    }
+                  >
+                    View customer
+                  </s-button>
+                </s-stack>
 
-          {/* Customers List */}
-          <s-layout-section>
-            <s-stack direction="vertical" gap="lg">
-              {customers.map((customer) => (
-                <s-card key={customer.id}>
-                  {/* Customer Header */}
-                  <s-card-header>
-                    <s-stack direction="horizontal" gap="md" align="center">
-                      <s-text variant="headingMd">
-                        {customer.displayName || "Unnamed customer"}
-                      </s-text>
-                      {customer.email && (
-                        <s-badge tone="info">{customer.email}</s-badge>
-                      )}
-                      {customer.phone && (
-                        <s-badge tone="info">{customer.phone}</s-badge>
-                      )}
-                      <s-box flex="1" />
-                      <s-button
-                        variant="tertiary"
-                        onClick={() =>
-                          shopify.intents.invoke?.("edit:shopify/Customer", {
-                            value: customer.id,
-                          })
-                        }
-                      >
-                        View customer
-                      </s-button>
-                    </s-stack>
-                  </s-card-header>
+                {/* Warranties for this customer */}
+                {customer.warranties.length === 0 ? (
+                  <s-paragraph>
+                    This customer has no warranty activation records linked.
+                  </s-paragraph>
+                ) : (
+                  <s-stack direction="block" gap="base">
+                    {customer.warranties.map((warranty) => {
+                      const normalizedStatus = ["Approved", "Pending", "Rejected", "In Process"].includes(
+                        warranty.status,
+                      )
+                        ? warranty.status
+                        : "Pending";
 
-                  {/* Warranties */}
-                  {customer.warranties.length === 0 ? (
-                    <s-card-section>
-                      <s-text tone="subdued">
-                        No warranty activation records linked.
-                      </s-text>
-                    </s-card-section>
-                  ) : (
-                    <s-card-section>
-                      <s-stack direction="vertical" gap="lg">
-                        {customer.warranties.map((warranty) => {
-                          const normalizedStatus = [
-                            "Approved",
-                            "Pending",
-                            "Rejected",
-                            "In Process",
-                          ].includes(warranty.status)
-                            ? warranty.status
-                            : "Pending";
+                      return (
+                        <s-box
+                          key={warranty.id}
+                          padding="base"
+                          borderWidth="base"
+                          borderRadius="base"
+                          background="base"
+                        >
+                          {/* Read-only warranty fields */}
+                          <s-heading>
+                            {warranty.productName || "Warranty record"}
+                          </s-heading>
 
-                          return (
-                            <s-card
-                              key={warranty.id}
-                              padding="md"
-                              borderWidth="base"
-                              borderRadius="base"
-                            >
-                              <s-stack direction="vertical" gap="md">
-                                {/* Product Header with Status */}
-                                <s-stack
-                                  direction="horizontal"
-                                  gap="md"
-                                  align="center"
+                          <s-stack direction="block" gap="none">
+                            <s-text>
+                              <s-text variant="bodyStrong">Customer email:</s-text>{" "}
+                              {warranty.customerEmail || "—"}
+                            </s-text>
+                            <s-text>
+                              <s-text variant="bodyStrong">Purchase source:</s-text>{" "}
+                              {warranty.purchaseSource || "—"}
+                            </s-text>
+                            <s-text>
+                              <s-text variant="bodyStrong">Purchase date:</s-text>{" "}
+                              {warranty.purchaseDate || "—"}
+                            </s-text>
+                            <s-text>
+                              <s-text variant="bodyStrong">Order / Invoice #:</s-text>{" "}
+                              {warranty.orderInvoiceNumber || "—"}
+                            </s-text>
+                            <s-text>
+                              <s-text variant="bodyStrong">Serial number:</s-text>{" "}
+                              {warranty.serialNumber || "—"}
+                            </s-text>
+                          </s-stack>
+
+                          {/* Save Warranty form */}
+                          <fetcher.Form method="post">
+                            <input
+                              type="hidden"
+                              name="_intent"
+                              value="saveWarranty"
+                            />
+                            <input
+                              type="hidden"
+                              name="metaobjectId"
+                              value={warranty.id}
+                            />
+
+                            {/* Polaris fields as actual form controls */}
+                            <s-stack direction="inline" gap="base">
+                              <s-date-field
+                                name="startDate"
+                                label="Start date"
+                                defaultValue={warranty.startDate || ""}
+                              />
+                              <s-date-field
+                                name="endDate"
+                                label="End date"
+                                defaultValue={warranty.endDate || ""}
+                              />
+                              <s-select name="status" label="Status">
+                                <s-option
+                                  value="Pending"
+                                  selected={normalizedStatus === "Pending"}
                                 >
-                                  <s-text variant="headingSm">
-                                    {warranty.productName || "Warranty Record"}
-                                  </s-text>
-                                  <s-badge tone={getStatusBadgeTone(normalizedStatus)}>
-                                    {normalizedStatus}
-                                  </s-badge>
-                                </s-stack>
+                                  Pending
+                                </s-option>
+                                <s-option
+                                  value="Approved"
+                                  selected={normalizedStatus === "Approved"}
+                                >
+                                  Approved
+                                </s-option>
+                                <s-option
+                                  value="Rejected"
+                                  selected={normalizedStatus === "Rejected"}
+                                >
+                                  Rejected
+                                </s-option>
+                                <s-option
+                                  value="In Process"
+                                  selected={normalizedStatus === "In Process"}
+                                >
+                                  In Process
+                                </s-option>
+                              </s-select>
+                            </s-stack>
 
-                                {/* Product Details Grid */}
-                                <s-grid columns="2" gap="md">
-                                  <s-box>
-                                    <s-text variant="bodySm" tone="subdued">
-                                      Customer Email
-                                    </s-text>
-                                    <s-text>
-                                      {warranty.customerEmail || "—"}
-                                    </s-text>
-                                  </s-box>
-                                  <s-box>
-                                    <s-text variant="bodySm" tone="subdued">
-                                      Purchase Source
-                                    </s-text>
-                                    <s-text>
-                                      {warranty.purchaseSource || "—"}
-                                    </s-text>
-                                  </s-box>
-                                  <s-box>
-                                    <s-text variant="bodySm" tone="subdued">
-                                      Purchase Date
-                                    </s-text>
-                                    <s-text>
-                                      {formatDate(warranty.purchaseDate)}
-                                    </s-text>
-                                  </s-box>
-                                  <s-box>
-                                    <s-text variant="bodySm" tone="subdued">
-                                      Order/Invoice #
-                                    </s-text>
-                                    <s-text>
-                                      {warranty.orderInvoiceNumber || "—"}
-                                    </s-text>
-                                  </s-box>
-                                  <s-box>
-                                    <s-text variant="bodySm" tone="subdued">
-                                      Serial Number
-                                    </s-text>
-                                    <s-text>
-                                      {warranty.serialNumber || "—"}
-                                    </s-text>
-                                  </s-box>
-                                </s-grid>
+                            <s-stack direction="inline" gap="base">
+                              <s-button
+                                type="submit"
+                                {...(isSubmitting ? { loading: true } : {})}
+                              >
+                                Save warranty
+                              </s-button>
 
-                                {/* Warranty Management Section */}
-                                <s-divider />
-
-                                <s-text variant="headingXs">
-                                  Warranty Management
+                              {fetcher.data && !fetcher.data.ok && !fetcher.data.sentEmail && (
+                                <s-text tone="critical">
+                                  {fetcher.data.error || "Action failed."}
                                 </s-text>
+                              )}
+                            </s-stack>
+                          </fetcher.Form>
 
-                                <s-grid columns="3" gap="md">
-                                  {/* Save Warranty Form */}
-                                  <s-box gridColumn="span 2">
-                                    <fetcher.Form method="post">
-                                      <input
-                                        type="hidden"
-                                        name="_intent"
-                                        value="saveWarranty"
-                                      />
-                                      <input
-                                        type="hidden"
-                                        name="metaobjectId"
-                                        value={warranty.id}
-                                      />
+                          {/* Send Email form (separate so _intent is always sendEmail) */}
+                          <fetcher.Form method="post">
+                            <input
+                              type="hidden"
+                              name="_intent"
+                              value="sendEmail"
+                            />
 
-                                      <s-stack direction="horizontal" gap="md">
-                                        <s-date-field
-                                          name="startDate"
-                                          label="Start Date"
-                                          defaultValue={
-                                            warranty.startDate || ""
-                                          }
-                                          fullWidth
-                                        />
-                                        <s-date-field
-                                          name="endDate"
-                                          label="End Date"
-                                          defaultValue={warranty.endDate || ""}
-                                          fullWidth
-                                        />
-                                        <s-select
-                                          name="status"
-                                          label="Status"
-                                          fullWidth
-                                        >
-                                          <s-option
-                                            value="Pending"
-                                            selected={
-                                              normalizedStatus === "Pending"
-                                            }
-                                          >
-                                            Pending
-                                          </s-option>
-                                          <s-option
-                                            value="Approved"
-                                            selected={
-                                              normalizedStatus === "Approved"
-                                            }
-                                          >
-                                            Approved
-                                          </s-option>
-                                          <s-option
-                                            value="Rejected"
-                                            selected={
-                                              normalizedStatus === "Rejected"
-                                            }
-                                          >
-                                            Rejected
-                                          </s-option>
-                                          <s-option
-                                            value="In Process"
-                                            selected={
-                                              normalizedStatus === "In Process"
-                                            }
-                                          >
-                                            In Process
-                                          </s-option>
-                                        </s-select>
-                                        <s-box alignSelf="end">
-                                          <s-button
-                                            type="submit"
-                                            {...(isSubmitting
-                                              ? { loading: true }
-                                              : {})}
-                                          >
-                                            Save
-                                          </s-button>
-                                        </s-box>
-                                      </s-stack>
+                            {/* Email-related hidden fields */}
+                            <input
+                              type="hidden"
+                              name="customerEmail"
+                              value={warranty.customerEmail || customer.email || ""}
+                            />
+                            <input
+                              type="hidden"
+                              name="customerName"
+                              value={customer.displayName || ""}
+                            />
+                            <input
+                              type="hidden"
+                              name="productName"
+                              value={warranty.productName || ""}
+                            />
+                            <input
+                              type="hidden"
+                              name="orderInvoiceNumber"
+                              value={warranty.orderInvoiceNumber || ""}
+                            />
+                            <input
+                              type="hidden"
+                              name="serialNumber"
+                              value={warranty.serialNumber || ""}
+                            />
+                            <input
+                              type="hidden"
+                              name="purchaseDate"
+                              value={warranty.purchaseDate || ""}
+                            />
+                            <input
+                              type="hidden"
+                              name="purchaseSource"
+                              value={warranty.purchaseSource || ""}
+                            />
+                            {/* Current status and dates for email content */}
+                            <input
+                              type="hidden"
+                              name="status"
+                              value={normalizedStatus}
+                            />
+                            <input
+                              type="hidden"
+                              name="startDate"
+                              value={warranty.startDate || ""}
+                            />
+                            <input
+                              type="hidden"
+                              name="endDate"
+                              value={warranty.endDate || ""}
+                            />
 
-                                      {fetcher.data &&
-                                        !fetcher.data.ok &&
-                                        !fetcher.data.sentEmail && (
-                                          <s-text tone="critical" size="sm">
-                                            {fetcher.data.error ||
-                                              "Action failed."}
-                                          </s-text>
-                                        )}
-                                    </fetcher.Form>
-                                  </s-box>
+                            <s-stack direction="inline" gap="base">
+                              <s-button type="submit" variant="secondary">
+                                Send email
+                              </s-button>
 
-                                  {/* Send Email Button */}
-                                  <s-box alignSelf="end">
-                                    <fetcher.Form method="post">
-                                      <input
-                                        type="hidden"
-                                        name="_intent"
-                                        value="sendEmail"
-                                      />
-                                      <input
-                                        type="hidden"
-                                        name="customerEmail"
-                                        value={
-                                          warranty.customerEmail ||
-                                          customer.email ||
-                                          ""
-                                        }
-                                      />
-                                      <input
-                                        type="hidden"
-                                        name="customerName"
-                                        value={customer.displayName || ""}
-                                      />
-                                      <input
-                                        type="hidden"
-                                        name="productName"
-                                        value={warranty.productName || ""}
-                                      />
-                                      <input
-                                        type="hidden"
-                                        name="orderInvoiceNumber"
-                                        value={warranty.orderInvoiceNumber || ""}
-                                      />
-                                      <input
-                                        type="hidden"
-                                        name="serialNumber"
-                                        value={warranty.serialNumber || ""}
-                                      />
-                                      <input
-                                        type="hidden"
-                                        name="purchaseDate"
-                                        value={warranty.purchaseDate || ""}
-                                      />
-                                      <input
-                                        type="hidden"
-                                        name="purchaseSource"
-                                        value={warranty.purchaseSource || ""}
-                                      />
-                                      <input
-                                        type="hidden"
-                                        name="status"
-                                        value={normalizedStatus}
-                                      />
-                                      <input
-                                        type="hidden"
-                                        name="startDate"
-                                        value={warranty.startDate || ""}
-                                      />
-                                      <input
-                                        type="hidden"
-                                        name="endDate"
-                                        value={warranty.endDate || ""}
-                                      />
-
-                                      <s-button
-                                        type="submit"
-                                        variant="secondary"
-                                        fullWidth
-                                      >
-                                        Send Email
-                                      </s-button>
-
-                                      {fetcher.data &&
-                                        !fetcher.data.ok &&
-                                        fetcher.data.sentEmail === false && (
-                                          <s-text tone="critical" size="sm">
-                                            {fetcher.data.error ||
-                                              "Failed to send email."}
-                                          </s-text>
-                                        )}
-                                    </fetcher.Form>
-                                  </s-box>
-                                </s-grid>
-
-                                {/* Warranty Period Display */}
-                                {(warranty.startDate || warranty.endDate) && (
-                                  <>
-                                    <s-divider />
-                                    <s-stack direction="horizontal" gap="md">
-                                      {warranty.startDate && (
-                                        <s-box>
-                                          <s-text variant="bodySm" tone="subdued">
-                                            Warranty Start
-                                          </s-text>
-                                          <s-text>
-                                            {formatDate(warranty.startDate)}
-                                          </s-text>
-                                        </s-box>
-                                      )}
-                                      {warranty.endDate && (
-                                        <s-box>
-                                          <s-text variant="bodySm" tone="subdued">
-                                            Warranty End
-                                          </s-text>
-                                          <s-text>
-                                            {formatDate(warranty.endDate)}
-                                          </s-text>
-                                        </s-box>
-                                      )}
-                                    </s-stack>
-                                  </>
-                                )}
-                              </s-stack>
-                            </s-card>
-                          );
-                        })}
-                      </s-stack>
-                    </s-card-section>
-                  )}
-                </s-card>
-              ))}
-            </s-stack>
-          </s-layout-section>
-        </s-layout>
-      )}
+                              {fetcher.data && !fetcher.data.ok && fetcher.data.sentEmail === false && (
+                                <s-text tone="critical">
+                                  {fetcher.data.error || "Failed to send email."}
+                                </s-text>
+                              )}
+                            </s-stack>
+                          </fetcher.Form>
+                        </s-box>
+                      );
+                    })}
+                  </s-stack>
+                )}
+              </s-box>
+            ))}
+          </s-stack>
+        )}
+      </s-section>
     </s-page>
   );
 }
