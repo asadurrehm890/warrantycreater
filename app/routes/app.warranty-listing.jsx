@@ -313,15 +313,21 @@ export default function WarrantyListingPage() {
                               Status
                             </label>
                             <select
-                              name="status"
-                              defaultValue={warranty.status || "Pending"}
-                              style={{ width: "100%" }}
-                            >
-                              <option value="Pending">Pending</option>
-                              <option value="Active">Active</option>
-                              <option value="Expired">Expired</option>
-                              <option value="Rejected">Rejected</option>
-                            </select>
+                            name="status"
+                            defaultValue={
+                              ["Approved", "Pending", "Rejected", "In Process"].includes(
+                                warranty.status,
+                              )
+                                ? warranty.status
+                                : "Pending"
+                            }
+                            style={{ width: "100%" }}
+                          >
+                            <option value="Pending">Pending</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Rejected">Rejected</option>
+                            <option value="In Process">In Process</option>
+                          </select>
                           </div>
                         </div>
 
