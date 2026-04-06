@@ -90,6 +90,20 @@ export async function action({ request }) {
   }
   const customerId = customerResult.customerId;
 
+
+    // 1b. Add the "warrantyregistered" tag to the customer
+  const tagResult = await addWarrantyTagToCustomer(session, customerId);
+
+  if (!tagResult.ok) {
+    console.error("Failed to add warrantyregistered tag", tagResult.error);
+    // You can decide whether to fail the whole request or just log the error.
+    // If you want to fail:
+    // return new Response(JSON.stringify({ error: tagResult.error }), {
+    //   status: 500,
+    //   headers: { "Content-Type": "application/json" },
+    // });
+  }
+
   // 2. Create Warranty metaobject, including customer reference field
   const warrantyResult = await createWarrantyMetaobject(session, {
     customerEmail: email,
@@ -484,6 +498,50 @@ async function setCustomerWarrantyMetafield(
     return {
       ok: false,
       error: `metafieldsSet errors: ${JSON.stringify(userErrors)}`,
+    };
+  }
+
+  return { ok: true };
+}
+
+
+// Add this helper to apply the "warrantyregistered" tag to a customer
+async function addWarrantyTagToCustomer(session, customerId) {
+  const mutation = `#graphql
+    mutation AddWarrantyTagToCustomer($id: ID!, $tags: [String!]!) {
+      tagsAdd(id: $id, tags: $tags) {
+        node {
+          id
+        }
+        userErrors {
+          message
+        }
+      }
+    }
+  `;
+
+  const res = await callAdminGraphQL(session, mutation, {
+    id: customerId,
+    tags: ["warrantyregistered"],
+  });
+
+  if (!res.ok) {
+    return {
+      ok: false,
+      error: `tagsAdd failed: ${res.error}`,
+    };
+  }
+
+  const userErrors =
+    res.data &&
+    res.data.tagsAdd &&
+    res.data.tagsAdd.userErrors;
+
+  if (userErrors && userErrors.length > 0) {
+    console.error("tagsAdd userErrors", userErrors);
+    return {
+      ok: false,
+      error: `tagsAdd errors: ${JSON.stringify(userErrors)}`,
     };
   }
 
