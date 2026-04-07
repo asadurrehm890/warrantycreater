@@ -631,6 +631,20 @@ export default function WarrantyPage() {
 
       {/* Customer Information Section */}
       <section className="warranty-section">
+        {status && (
+          <p
+            className={
+              "warranty-status " +
+              (statusType === "error"
+                ? "warranty-status--error"
+                : statusType === "success"
+                ? "warranty-status--success"
+                : "")
+            }
+          >
+            {status}
+          </p>
+        )}
         <form className="warranty-form" onSubmit={handleSubmit}>
           <div className="warranty-field fulllwwidth">
             <label htmlFor="full_name">Full Name</label>
