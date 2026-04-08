@@ -511,6 +511,8 @@
   display: flex;
   align-items: center;
   gap: 0.25rem;
+      position: absolute;
+    bottom: -21px;
 }
 
 .field-error-message::before {
