@@ -40,6 +40,26 @@ export default function WarrantyPage() {
   const [countries, setCountries] = useState([]);
   const [countriesLoading, setCountriesLoading] = useState(false);
 
+  // Field-level error states
+  const [fieldErrors, setFieldErrors] = useState({
+    full_name: "",
+    email: "",
+    otp: "",
+    phone: "",
+    street: "",
+    town: "",
+    country: "",
+    postal_code: "",
+    purchase_source: "",
+    purchase_date: "",
+    order_number: "",
+    product_id: "",
+    serial_number: "",
+  });
+
+  // Field-level touched states for showing errors after blur
+  const [touched, setTouched] = useState({});
+
   // Static fallback list for countries - accurate phone codes
   const staticCountries = [
     { code: "+44", country: "United Kingdom", flag: "🇬🇧", isoCode: "GB" },
@@ -66,6 +86,154 @@ export default function WarrantyPage() {
 
   // Ideal Postcodes API Key - Add this at the top with your actual key
   const IDEAL_POSTCODES_API_KEY = "ak_test"; // Replace with your key from ideal-postcodes.co.uk
+
+  // Helper function to validate individual fields
+  const validateField = (fieldName, value, formData = {}) => {
+    let error = "";
+    
+    switch (fieldName) {
+      case "full_name":
+        if (!value || value.trim() === "") {
+          error = "Full name is required";
+        } else if (value.trim().length < 2) {
+          error = "Full name must be at least 2 characters";
+        }
+        break;
+        
+      case "email":
+        if (!value || value.trim() === "") {
+          error = "Email address is required";
+        } else if (!/\S+@\S+\.\S+/.test(value)) {
+          error = "Please enter a valid email address";
+        }
+        break;
+        
+      case "otp":
+        if (!value || value.trim() === "") {
+          error = "OTP is required";
+        } else if (!/^\d{6}$/.test(value)) {
+          error = "OTP must be 6 digits";
+        }
+        break;
+        
+      case "phone":
+        if (!value || value.trim() === "" || value === phoneCountryCode) {
+          error = "Phone number is required";
+        } else {
+          const digitsOnly = value.replace(/\D/g, "");
+          if (digitsOnly.length < 10) {
+            error = "Phone number is too short";
+          } else if (digitsOnly.length > 15) {
+            error = "Phone number is too long";
+          }
+        }
+        break;
+        
+      case "street":
+        if (!value || value.trim() === "") {
+          error = "Street address is required";
+        }
+        break;
+        
+      case "town":
+        if (!value || value.trim() === "") {
+          error = "Town/City is required";
+        }
+        break;
+        
+      case "country":
+        if (!value || value.trim() === "") {
+          error = "Country is required";
+        }
+        break;
+        
+      case "postal_code":
+        if (!value || value.trim() === "") {
+          error = "Postal code is required";
+        }
+        break;
+        
+      case "purchase_source":
+        if (!value || value === "") {
+          error = "Please select a purchase source";
+        }
+        break;
+        
+      case "purchase_date":
+        if (!value || value === "") {
+          error = "Purchase date is required";
+        } else {
+          const selectedDate = new Date(value);
+          const today = new Date();
+          if (selectedDate > today) {
+            error = "Purchase date cannot be in the future";
+          }
+        }
+        break;
+        
+      case "order_number":
+        if (!value || value.trim() === "") {
+          error = "Order/Invoice number is required";
+        }
+        break;
+        
+      case "product_id":
+        if (!value || value === "") {
+          error = "Please select a product";
+        }
+        break;
+        
+      case "serial_number":
+        if (!value || value.trim() === "") {
+          error = "Product serial number is required";
+        }
+        break;
+        
+      default:
+        break;
+    }
+    
+    return error;
+  };
+
+  // Validate all fields on form submission
+  const validateAllFields = (formData) => {
+    const newErrors = {};
+    let isValid = true;
+    
+    // Email verification check
+    if (!emailVerified) {
+      setStatus("Please verify your email first.");
+      setStatusType("error");
+      return false;
+    }
+    
+    // Validate each required field
+    const fieldsToValidate = [
+      "full_name", "phone", "street", "town", "country", 
+      "postal_code", "purchase_source", "purchase_date", 
+      "order_number", "product_id", "serial_number"
+    ];
+    
+    fieldsToValidate.forEach(field => {
+      const value = formData.get(field) || addressFields[field] || "";
+      const error = validateField(field, value, formData);
+      if (error) {
+        newErrors[field] = error;
+        isValid = false;
+      }
+    });
+    
+    setFieldErrors(prev => ({ ...prev, ...newErrors }));
+    return isValid;
+  };
+
+  // Handle field blur to show error
+  const handleFieldBlur = (fieldName, value) => {
+    setTouched(prev => ({ ...prev, [fieldName]: true }));
+    const error = validateField(fieldName, value);
+    setFieldErrors(prev => ({ ...prev, [fieldName]: error }));
+  };
 
   // Fetch countries from better API
   useEffect(() => {
@@ -375,6 +543,15 @@ export default function WarrantyPage() {
       postal_code: postalCode || "",
     });
 
+    // Clear field errors for address fields
+    setFieldErrors(prev => ({
+      ...prev,
+      street: "",
+      town: "",
+      country: "",
+      postal_code: ""
+    }));
+
     // Clear search and suggestions
     setAddressSearch("");
     setAddressSuggestions([]);
@@ -384,12 +561,17 @@ export default function WarrantyPage() {
     setStatusType("success");
   };
 
-  // Handle manual changes to address fields
+  // Handle manual changes to address fields with validation
   const handleAddressFieldChange = (field, value) => {
     setAddressFields((prev) => ({
       ...prev,
       [field]: value,
     }));
+    
+    // Clear error for this field when user starts typing
+    if (fieldErrors[field]) {
+      setFieldErrors(prev => ({ ...prev, [field]: "" }));
+    }
   };
 
   // Close address suggestions when clicking outside
@@ -430,12 +612,21 @@ export default function WarrantyPage() {
     } else {
       setPhoneNumber(value);
     }
+    
+    // Clear phone error when user starts typing
+    if (phoneError) {
+      setPhoneError("");
+    }
+    if (fieldErrors.phone) {
+      setFieldErrors(prev => ({ ...prev, phone: "" }));
+    }
   };
 
   // Validate phone number
   const validatePhoneNumber = () => {
     if (!phoneNumber.trim() || phoneNumber === phoneCountryCode) {
       setPhoneError("Phone number is required");
+      setFieldErrors(prev => ({ ...prev, phone: "Phone number is required" }));
       return false;
     }
 
@@ -448,15 +639,18 @@ export default function WarrantyPage() {
     // Check total length (including country code)
     if (digitsOnly.length < 10) {
       setPhoneError("Phone number is too short");
+      setFieldErrors(prev => ({ ...prev, phone: "Phone number is too short" }));
       return false;
     }
 
     if (digitsOnly.length > 15) {
       setPhoneError("Phone number is too long");
+      setFieldErrors(prev => ({ ...prev, phone: "Phone number is too long" }));
       return false;
     }
 
     setPhoneError("");
+    setFieldErrors(prev => ({ ...prev, phone: "" }));
     return true;
   };
 
@@ -476,6 +670,18 @@ export default function WarrantyPage() {
   // Your existing functions
   async function handleSendOtp(e) {
     e.preventDefault();
+    
+    // Validate email first
+    const emailError = validateField("email", email);
+    if (emailError) {
+      setFieldErrors(prev => ({ ...prev, email: emailError }));
+      setTouched(prev => ({ ...prev, email: true }));
+      setStatus("Please enter a valid email address");
+      setStatusType("error");
+      return;
+    }
+    
+    setFieldErrors(prev => ({ ...prev, email: "" }));
     setStatusType(null);
     setStatus("Sending OTP...");
     try {
@@ -503,6 +709,18 @@ export default function WarrantyPage() {
 
   async function handleVerifyOtp(e) {
     e.preventDefault();
+    
+    // Validate OTP
+    const otpError = validateField("otp", otp);
+    if (otpError) {
+      setFieldErrors(prev => ({ ...prev, otp: otpError }));
+      setTouched(prev => ({ ...prev, otp: true }));
+      setStatus("Please enter a valid OTP");
+      setStatusType("error");
+      return;
+    }
+    
+    setFieldErrors(prev => ({ ...prev, otp: "" }));
     setStatusType(null);
     setStatus("Verifying OTP...");
     try {
@@ -535,6 +753,7 @@ export default function WarrantyPage() {
     setOtp("");
     setStatus(null);
     setStatusType(null);
+    setFieldErrors(prev => ({ ...prev, email: "", otp: "" }));
   }
 
   async function handleSubmit(e) {
@@ -547,33 +766,44 @@ export default function WarrantyPage() {
       return;
     }
 
-    // Validate phone number
+    const formData = new FormData(e.currentTarget);
+    
+    // Add the complete phone number
+    formData.set("phone", phoneNumber);
+    formData.set("email", email);
+    formData.set("otpToken", otpToken);
+
+    // Add address fields to the submission
+    formData.set("street", addressFields.street);
+    formData.set("town", addressFields.town);
+    formData.set("country", addressFields.country);
+    formData.set("postal_code", addressFields.postal_code);
+
+    const selectedProduct = products.find((p) => p.id === selectedProductId);
+    if (selectedProduct) {
+      formData.set("product_title", selectedProduct.title);
+    }
+
+    // Validate all fields
+    if (!validateAllFields(formData)) {
+      setStatus("Please fix the errors below before submitting.");
+      setStatusType("error");
+      // Scroll to first error
+      const firstErrorField = document.querySelector(".field-error");
+      if (firstErrorField) {
+        firstErrorField.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      return;
+    }
+
+    // Validate phone number separately
     if (!validatePhoneNumber()) {
       setStatus("Please enter a valid phone number.");
       setStatusType("error");
       return;
     }
 
-    const formData = new FormData(e.currentTarget);
     const body = Object.fromEntries(formData.entries());
-
-    // Remove old phone fields
-    delete body.phone;
-    delete body.phone_country_code;
-
-    // Add the complete phone number
-    body.phone = phoneNumber;
-
-    body.email = email;
-    body.otpToken = otpToken;
-
-    // Add address fields to the submission
-    Object.assign(body, addressFields);
-
-    const selectedProduct = products.find((p) => p.id === body.product_id);
-    if (selectedProduct) {
-      body.product_title = selectedProduct.title;
-    }
 
     setStatusType(null);
     setStatus("Submitting warranty...");
@@ -601,25 +831,22 @@ export default function WarrantyPage() {
     }
   }
 
+  const countryOptions = countries.map((country) => ({
+    value: country.code,
+    label: country.country,
+    isoCode: country.isoCode,
+  }));
 
-    const countryOptions = countries.map((country) => ({
-      value: country.code,
-      label: country.country,
-      isoCode: country.isoCode,
-    }));
+  const formatOptionLabel = ({ label, value, isoCode }) => {
+    const flagUrl = findFlagUrlByIso2Code(isoCode);
 
-
-      const formatOptionLabel = ({ label, value, isoCode }) => {
-      const flagUrl = findFlagUrlByIso2Code(isoCode);
-
-      return (
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <img src={flagUrl} alt={label} width="20" />
-          <span><span className="ki0490400ki440ki">{label}</span>({value})</span>
-        </div>
-      );
-    };
-
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <img src={flagUrl} alt={label} width="20" />
+        <span><span className="ki0490400ki440ki">{label}</span>({value})</span>
+      </div>
+    );
+  };
 
   return (
     <main className="warranty-page">
@@ -650,12 +877,21 @@ export default function WarrantyPage() {
             <label htmlFor="full_name">Full Name</label>
             <input
               id="full_name"
-              className="warranty-input"
+              className={`warranty-input ${fieldErrors.full_name && touched.full_name ? "input-error" : ""}`}
               type="text"
               name="full_name"
               placeholder="Full Name"
               required
+              onBlur={(e) => handleFieldBlur("full_name", e.target.value)}
+              onChange={() => {
+                if (fieldErrors.full_name) {
+                  setFieldErrors(prev => ({ ...prev, full_name: "" }));
+                }
+              }}
             />
+            {fieldErrors.full_name && touched.full_name && (
+              <p className="field-error-message">{fieldErrors.full_name}</p>
+            )}
           </div>
 
           <div className="email-verification-section fulllwwidth">
@@ -667,14 +903,23 @@ export default function WarrantyPage() {
                       <label htmlFor="warranty-email">Email</label>
                       <input
                         id="warranty-email"
-                        className="warranty-input"
+                        className={`warranty-input ${fieldErrors.email && touched.email ? "input-error" : ""}`}
                         type="email"
                         name="customer_email"
                         required
                         value={email}
                         placeholder="Email Address"
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          if (fieldErrors.email) {
+                            setFieldErrors(prev => ({ ...prev, email: "" }));
+                          }
+                        }}
+                        onBlur={(e) => handleFieldBlur("email", e.target.value)}
                       />
+                      {fieldErrors.email && touched.email && (
+                        <p className="field-error-message">{fieldErrors.email}</p>
+                      )}
                     </div>
                     <div className="warranty-actions otp-actions">
                       <button
@@ -692,14 +937,23 @@ export default function WarrantyPage() {
                       <label htmlFor="warranty-otp">Enter OTP</label>
                       <input
                         id="warranty-otp"
-                        className="warranty-input"
+                        className={`warranty-input ${fieldErrors.otp && touched.otp ? "input-error" : ""}`}
                         type="text"
                         name="otp"
                         required
                         value={otp}
                         placeholder="Enter OTP"
-                        onChange={(e) => setOtp(e.target.value)}
+                        onChange={(e) => {
+                          setOtp(e.target.value);
+                          if (fieldErrors.otp) {
+                            setFieldErrors(prev => ({ ...prev, otp: "" }));
+                          }
+                        }}
+                        onBlur={(e) => handleFieldBlur("otp", e.target.value)}
                       />
+                      {fieldErrors.otp && touched.otp && (
+                        <p className="field-error-message">{fieldErrors.otp}</p>
+                      )}
                     </div>
                     <div className="warranty-actions otp-actions">
                       <button
@@ -734,8 +988,6 @@ export default function WarrantyPage() {
 
           {/* Phone Number Section - UPDATED */}
           <div className="warranty-field fulllwwidth phone98008008">
-           
-            
             <div className="phone-input-container">
               {/* Country Code Selector with Flags */}
               <div className="country-code-selector">
@@ -746,54 +998,27 @@ export default function WarrantyPage() {
                   formatOptionLabel={formatOptionLabel}
                   isSearchable
                 />
-
-               {/* <select
-                  id="phone_country_code"
-                  className="warranty-select phone-country-select"
-                  value={phoneCountryCode}
-                  onChange={(e) => handleCountryCodeChange(e.target.value)}
-                  disabled={countriesLoading}
-                >
-                  {countriesLoading ? (
-                    <option value="+44">Loading countries...</option>
-                  ) : (
-                    <>
-                      <option value="" disabled>
-                        Select country
-                      </option>
-                      {countries.map((country) => {
-                        const flagUrl = findFlagUrlByIso2Code(country.isoCode);
-                        return (
-                          <option
-                            key={country.isoCode || country.code}
-                            value={country.code}
-                          >
-                            <img src={flagUrl} alt={country.country} className="country-flag" /> ({country.code})
-                          </option>
-                        );
-                      })}
-                    </>
-                  )}
-                </select>*/}
               </div>
               
               {/* Phone Number Input (contains full number including country code) */}
               <input
                 id="phone"
-                className="warranty-input phone-number-input"
+                className={`warranty-input phone-number-input ${fieldErrors.phone || phoneError ? "input-error" : ""}`}
                 type="tel"
                 value={phoneNumber}
                 onChange={(e) => handlePhoneNumberChange(e.target.value)}
                 placeholder="+44 123 456 7890"
                 required
-                name="phone" // This is the field that gets submitted
+                name="phone"
+                onBlur={() => {
+                  setTouched(prev => ({ ...prev, phone: true }));
+                  validatePhoneNumber();
+                }}
               />
             </div>
             
-            {phoneError && (
-              <div className="phone-error-message">
-                {phoneError}
-              </div>
+            {(phoneError || fieldErrors.phone) && (
+              <p className="field-error-message">{phoneError || fieldErrors.phone}</p>
             )}
           </div>
 
@@ -863,67 +1088,87 @@ export default function WarrantyPage() {
             <label htmlFor="street">Street Address</label>
             <input
               id="street"
-              className="warranty-input"
+              className={`warranty-input ${fieldErrors.street && touched.street ? "input-error" : ""}`}
               type="text"
               name="street"
               required
               value={addressFields.street}
               placeholder="Street Address"
               onChange={(e) => handleAddressFieldChange("street", e.target.value)}
+              onBlur={(e) => handleFieldBlur("street", e.target.value)}
             />
+            {fieldErrors.street && touched.street && (
+              <p className="field-error-message">{fieldErrors.street}</p>
+            )}
           </div>
 
           <div className="warranty-field">
             <label htmlFor="town">Town / City</label>
             <input
               id="town"
-              className="warranty-input"
+              className={`warranty-input ${fieldErrors.town && touched.town ? "input-error" : ""}`}
               type="text"
               name="town"
               required
               value={addressFields.town}
               placeholder="Town / City"
               onChange={(e) => handleAddressFieldChange("town", e.target.value)}
+              onBlur={(e) => handleFieldBlur("town", e.target.value)}
             />
+            {fieldErrors.town && touched.town && (
+              <p className="field-error-message">{fieldErrors.town}</p>
+            )}
           </div>
 
           <div className="warranty-field">
             <label htmlFor="country">Country</label>
             <input
               id="country"
-              className="warranty-input"
+              className={`warranty-input ${fieldErrors.country && touched.country ? "input-error" : ""}`}
               type="text"
               name="country"
               required
               value={addressFields.country}
               placeholder="Country"
               onChange={(e) => handleAddressFieldChange("country", e.target.value)}
+              onBlur={(e) => handleFieldBlur("country", e.target.value)}
             />
+            {fieldErrors.country && touched.country && (
+              <p className="field-error-message">{fieldErrors.country}</p>
+            )}
           </div>
 
           <div className="warranty-field">
             <label htmlFor="postal_code">Postal Code</label>
             <input
               id="postal_code"
-              className="warranty-input"
+              className={`warranty-input ${fieldErrors.postal_code && touched.postal_code ? "input-error" : ""}`}
               type="text"
               name="postal_code"
               required
               value={addressFields.postal_code}
               placeholder="Postal Code"
-              onChange={(e) =>
-                handleAddressFieldChange("postal_code", e.target.value)
-              }
+              onChange={(e) => handleAddressFieldChange("postal_code", e.target.value)}
+              onBlur={(e) => handleFieldBlur("postal_code", e.target.value)}
             />
+            {fieldErrors.postal_code && touched.postal_code && (
+              <p className="field-error-message">{fieldErrors.postal_code}</p>
+            )}
           </div>
 
           <div className="warranty-field labelupper908">
             <label htmlFor="purchase_source">Purchase Source</label>
             <select
               id="purchase_source"
-              className="warranty-select"
+              className={`warranty-select ${fieldErrors.purchase_source && touched.purchase_source ? "input-error" : ""}`}
               name="purchase_source"
               required
+              onBlur={(e) => handleFieldBlur("purchase_source", e.target.value)}
+              onChange={() => {
+                if (fieldErrors.purchase_source) {
+                  setFieldErrors(prev => ({ ...prev, purchase_source: "" }));
+                }
+              }}
             >
               <option value="">Select...</option>
               <option>Amazon</option>
@@ -931,29 +1176,50 @@ export default function WarrantyPage() {
               <option>Mobitel Website</option>
               <option>Others</option>
             </select>
+            {fieldErrors.purchase_source && touched.purchase_source && (
+              <p className="field-error-message">{fieldErrors.purchase_source}</p>
+            )}
           </div>
 
           <div className="warranty-field labelupper908">
             <label htmlFor="purchase_date">Purchase Date</label>
             <input
               id="purchase_date"
-              className="warranty-input"
+              className={`warranty-input ${fieldErrors.purchase_date && touched.purchase_date ? "input-error" : ""}`}
               type="date"
               name="purchase_date"
               required
+              onBlur={(e) => handleFieldBlur("purchase_date", e.target.value)}
+              onChange={() => {
+                if (fieldErrors.purchase_date) {
+                  setFieldErrors(prev => ({ ...prev, purchase_date: "" }));
+                }
+              }}
             />
+            {fieldErrors.purchase_date && touched.purchase_date && (
+              <p className="field-error-message">{fieldErrors.purchase_date}</p>
+            )}
           </div>
 
           <div className="warranty-field">
             <label htmlFor="order_number">Order / Invoice Number</label>
             <input
               id="order_number"
-              className="warranty-input"
+              className={`warranty-input ${fieldErrors.order_number && touched.order_number ? "input-error" : ""}`}
               type="text"
               name="order_number"
               placeholder="Order / Invoice Number"
               required
+              onBlur={(e) => handleFieldBlur("order_number", e.target.value)}
+              onChange={() => {
+                if (fieldErrors.order_number) {
+                  setFieldErrors(prev => ({ ...prev, order_number: "" }));
+                }
+              }}
             />
+            {fieldErrors.order_number && touched.order_number && (
+              <p className="field-error-message">{fieldErrors.order_number}</p>
+            )}
           </div>
 
           {/* NEW: Product typeahead field */}
@@ -963,7 +1229,7 @@ export default function WarrantyPage() {
             {/* Visible typeable input */}
             <input
               id="product_search"
-              className="warranty-input"
+              className={`warranty-input ${fieldErrors.product_id && touched.product_id ? "input-error" : ""}`}
               type="text"
               placeholder={
                 productsLoading
@@ -976,6 +1242,9 @@ export default function WarrantyPage() {
               onChange={(e) => {
                 setProductSearchTerm(e.target.value);
                 setShowProductDropdown(true);
+                if (fieldErrors.product_id) {
+                  setFieldErrors(prev => ({ ...prev, product_id: "" }));
+                }
               }}
               onFocus={() => {
                 if (!productsLoading && !productsError) {
@@ -1013,6 +1282,7 @@ export default function WarrantyPage() {
                         setSelectedProductId(product.id);
                         setProductSearchTerm(product.title);
                         setShowProductDropdown(false);
+                        setTouched(prev => ({ ...prev, product_id: true }));
                       }}
                     >
                       {product.title}
@@ -1022,6 +1292,9 @@ export default function WarrantyPage() {
               </div>
             )}
 
+            {fieldErrors.product_id && touched.product_id && (
+              <p className="field-error-message">{fieldErrors.product_id}</p>
+            )}
             {productsError && (
               <p className="warranty-status warranty-status--error">
                 {productsError}
@@ -1033,12 +1306,21 @@ export default function WarrantyPage() {
             <label htmlFor="serial_number">Product Serial Number</label>
             <input
               id="serial_number"
-              className="warranty-input"
+              className={`warranty-input ${fieldErrors.serial_number && touched.serial_number ? "input-error" : ""}`}
               type="text"
               name="serial_number"
               placeholder="Product Serial Number"
               required
+              onBlur={(e) => handleFieldBlur("serial_number", e.target.value)}
+              onChange={() => {
+                if (fieldErrors.serial_number) {
+                  setFieldErrors(prev => ({ ...prev, serial_number: "" }));
+                }
+              }}
             />
+            {fieldErrors.serial_number && touched.serial_number && (
+              <p className="field-error-message">{fieldErrors.serial_number}</p>
+            )}
           </div>
 
           <div className="warranty-actions">

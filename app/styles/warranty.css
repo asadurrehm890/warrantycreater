@@ -495,3 +495,47 @@
 .css-1dimb5e-singleValue .ki0490400ki440ki {
     display: none;
 }
+
+
+/* Field-level error styles */
+.input-error {
+  border-color: #dc2626 !important;
+  background-color: #fef2f2 !important;
+}
+
+.field-error-message {
+  color: #dc2626;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.field-error-message::before {
+  content: "⚠️";
+  font-size: 0.7rem;
+}
+
+/* Style for select with error */
+select.input-error {
+  border-color: #dc2626;
+  background-color: #fef2f2;
+}
+
+/* Animation for error messages */
+.field-error-message {
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
