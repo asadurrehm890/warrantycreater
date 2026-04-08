@@ -1327,7 +1327,7 @@ export default function WarrantyPage() {
             <button
               className="warranty-button"
               type="submit"
-              disabled={!emailVerified}
+              
             >
               Submit Warranty
             </button>
