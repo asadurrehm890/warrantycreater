@@ -245,7 +245,7 @@ export default function WarrantyListingPage() {
 
   return (
     <s-page heading="Warranty registrations">
-      <s-section heading="Customers with warrantyregistered tag">
+      <s-section heading="Customers">
         {customers.length === 0 ? (
           <s-paragraph>
             No customers found with the{" "}
