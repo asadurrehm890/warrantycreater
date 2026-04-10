@@ -351,7 +351,7 @@ export default function WarrantyListingPage() {
   };
 
   return (
-    <s-page heading={`Warranty registrations (${totalCustomers} total)`}>
+    <s-page heading={`Warranty registrations`}>
       <s-section heading="Customers">
         {customers.length === 0 ? (
           <s-paragraph>
@@ -361,7 +361,7 @@ export default function WarrantyListingPage() {
         ) : (
           <>
             <s-text variant="bodySm">
-              Showing page {currentPage} of {totalPages}
+              Showing page {currentPage}
             </s-text>
 
             <s-stack direction="block" gap="base">
