@@ -10,37 +10,41 @@ export const loader = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
 
   const response = await admin.graphql(
-    `#graphql
-      query CustomersWithWarrantyMetaobjects(
-        $query: String!
-        $first: Int!
-        $warrantiesFirst: Int!
+  `#graphql
+    query CustomersWithWarrantyMetaobjects(
+      $query: String!
+      $first: Int!
+      $warrantiesFirst: Int!
+    ) {
+      customers(
+        first: $first
+        query: $query
+        sortKey: CREATED_AT
+        reverse: true
       ) {
-        customers(first: $first, query: $query) {
-          edges {
-            node {
+        edges {
+          node {
+            id
+            displayName
+            defaultEmailAddress { emailAddress }
+            defaultPhoneNumber { phoneNumber }
+            tags
+            metafield(namespace: "custom", key: "warranty_activation_details") {
               id
-              displayName
-              defaultEmailAddress { emailAddress }
-              defaultPhoneNumber { phoneNumber }
-              tags
-              metafield(namespace: "custom", key: "warranty_activation_details") {
-                id
-                type
-                references(first: $warrantiesFirst) {
-                  nodes {
-                    ... on Metaobject {
-                      id
-                      productName: field(key: "product_name") { value }
-                      customerEmail: field(key: "customer_email") { value }
-                      purchaseSource: field(key: "product_purchase_source") { value }
-                      purchaseDate: field(key: "product_purchase_date") { value }
-                      orderInvoiceNumber: field(key: "product_order_invoice_number") { value }
-                      serialNumber: field(key: "product_serial_number") { value }
-                      startDate: field(key: "start_date") { value }
-                      endDate: field(key: "end_date") { value }
-                      status: field(key: "status") { value }
-                    }
+              type
+              references(first: $warrantiesFirst) {
+                nodes {
+                  ... on Metaobject {
+                    id
+                    productName: field(key: "product_name") { value }
+                    customerEmail: field(key: "customer_email") { value }
+                    purchaseSource: field(key: "product_purchase_source") { value }
+                    purchaseDate: field(key: "product_purchase_date") { value }
+                    orderInvoiceNumber: field(key: "product_order_invoice_number") { value }
+                    serialNumber: field(key: "product_serial_number") { value }
+                    startDate: field(key: "start_date") { value }
+                    endDate: field(key: "end_date") { value }
+                    status: field(key: "status") { value }
                   }
                 }
               }
@@ -48,15 +52,16 @@ export const loader = async ({ request }) => {
           }
         }
       }
-    `,
-    {
-      variables: {
-        query: "tag:'warrantyregistered'",
-        first: 150,         // customers per page
-        warrantiesFirst: 20, // warranties per customer
-      },
+    }
+  `,
+  {
+    variables: {
+      query: "tag:'warrantyregistered'",
+      first: 150,
+      warrantiesFirst: 20,
     },
-  );
+  },
+);
 
   const json = await response.json();
 
