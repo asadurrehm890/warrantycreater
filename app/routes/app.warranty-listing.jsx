@@ -282,41 +282,25 @@ function Pagination({ currentPage, hasNextPage, hasPreviousPage, onPageChange })
         padding: "16px",
       }}
     >
-      <button
+      <s-button
         type="button"
         onClick={() => onPageChange(currentPage - 1, "prev")}
         disabled={currentPage <= 1 || !hasPreviousPage}
-        style={{
-          padding: "8px 16px",
-          borderRadius: "4px",
-          border: "1px solid #ccc",
-          backgroundColor: "#fff",
-          cursor: (currentPage <= 1 || !hasPreviousPage) ? "not-allowed" : "pointer",
-          opacity: (currentPage <= 1 || !hasPreviousPage) ? 0.5 : 1,
-        }}
       >
         Previous
-      </button>
+      </s-button>
 
-      <span style={{ fontSize: "14px" }}>
+      <s-text variant="bodySm">
         Page {currentPage}
-      </span>
+      </s-text>
 
-      <button
+      <s-button
         type="button"
         onClick={() => onPageChange(currentPage + 1, "next")}
         disabled={!hasNextPage}
-        style={{
-          padding: "8px 16px",
-          borderRadius: "4px",
-          border: "1px solid #ccc",
-          backgroundColor: "#fff",
-          cursor: !hasNextPage ? "not-allowed" : "pointer",
-          opacity: !hasNextPage ? 0.5 : 1,
-        }}
       >
         Next
-      </button>
+      </s-button>
     </div>
   );
 }
@@ -347,22 +331,19 @@ function AutoUpdateWarranty({ warranty, customer, onUpdate }) {
     }
   }, [fetcher.data, fetcher.state, shopify, onUpdate]);
 
-  const handleStatusChange = (e) => {
-    const newStatus = e.target.value;
-    setLocalStatus(newStatus);
-    submitUpdate(newStatus, localStartDate, localEndDate);
+  const handleStatusChange = (value) => {
+    setLocalStatus(value);
+    submitUpdate(value, localStartDate, localEndDate);
   };
 
-  const handleStartDateChange = (e) => {
-    const newDate = e.target.value;
-    setLocalStartDate(newDate);
-    submitUpdate(localStatus, newDate, localEndDate);
+  const handleStartDateChange = (value) => {
+    setLocalStartDate(value);
+    submitUpdate(localStatus, value, localEndDate);
   };
 
-  const handleEndDateChange = (e) => {
-    const newDate = e.target.value;
-    setLocalEndDate(newDate);
-    submitUpdate(localStatus, localStartDate, newDate);
+  const handleEndDateChange = (value) => {
+    setLocalEndDate(value);
+    submitUpdate(localStatus, localStartDate, value);
   };
 
   const submitUpdate = (status, startDate, endDate) => {
@@ -388,101 +369,72 @@ function AutoUpdateWarranty({ warranty, customer, onUpdate }) {
     : "Pending";
 
   return (
-    <div
-      style={{
-        padding: "16px",
-        borderWidth: "1px",
-        borderStyle: "solid",
-        borderColor: "#e0e0e0",
-        borderRadius: "4px",
-        backgroundColor: "#ffffff",
-      }}
+    <s-box
+      padding="base"
+      borderWidth="base"
+      borderRadius="base"
+      background="base"
     >
-      <h3 style={{ margin: "0 0 12px 0", fontSize: "16px", fontWeight: "600" }}>
+      <s-heading>
         {warranty.productName || "Warranty record"}
-      </h3>
+      </s-heading>
 
-      <div style={{ marginBottom: "12px" }}>
-        <div style={{ marginBottom: "4px" }}>
-          <strong>Customer email:</strong> {warranty.customerEmail || "—"}
-        </div>
-        <div style={{ marginBottom: "4px" }}>
-          <strong>Purchase source:</strong> {warranty.purchaseSource || "—"}
-        </div>
-        <div style={{ marginBottom: "4px" }}>
-          <strong>Purchase date:</strong> {warranty.purchaseDate || "—"}
-        </div>
-        <div style={{ marginBottom: "4px" }}>
-          <strong>Order / Invoice #:</strong> {warranty.orderInvoiceNumber || "—"}
-        </div>
-        <div style={{ marginBottom: "4px" }}>
-          <strong>Serial number:</strong> {warranty.serialNumber || "—"}
-        </div>
-      </div>
+      <s-stack direction="block" gap="none">
+        <s-text>
+          <s-text variant="bodyStrong">Customer email:</s-text>{" "}
+          {warranty.customerEmail || "—"}
+        </s-text>
+        <s-text>
+          <s-text variant="bodyStrong">Purchase source:</s-text>{" "}
+          {warranty.purchaseSource || "—"}
+        </s-text>
+        <s-text>
+          <s-text variant="bodyStrong">Purchase date:</s-text>{" "}
+          {warranty.purchaseDate || "—"}
+        </s-text>
+        <s-text>
+          <s-text variant="bodyStrong">Order / Invoice #:</s-text>{" "}
+          {warranty.orderInvoiceNumber || "—"}
+        </s-text>
+        <s-text>
+          <s-text variant="bodyStrong">Serial number:</s-text>{" "}
+          {warranty.serialNumber || "—"}
+        </s-text>
+      </s-stack>
 
       {/* Editable fields with auto-update */}
-      <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", marginTop: "12px" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          <label style={{ fontSize: "14px", fontWeight: "500" }}>Start date</label>
-          <input
-            type="date"
-            value={localStartDate}
-            onChange={handleStartDateChange}
-            disabled={isUpdating}
-            style={{
-              padding: "8px",
-              borderRadius: "4px",
-              border: "1px solid #ccc",
-              fontSize: "14px",
-            }}
-          />
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          <label style={{ fontSize: "14px", fontWeight: "500" }}>End date</label>
-          <input
-            type="date"
-            value={localEndDate}
-            onChange={handleEndDateChange}
-            disabled={isUpdating}
-            style={{
-              padding: "8px",
-              borderRadius: "4px",
-              border: "1px solid #ccc",
-              fontSize: "14px",
-            }}
-          />
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-          <label style={{ fontSize: "14px", fontWeight: "500" }}>Status</label>
-          <select
-            value={normalizedStatus}
-            onChange={handleStatusChange}
-            disabled={isUpdating}
-            style={{
-              padding: "8px",
-              borderRadius: "4px",
-              border: "1px solid #ccc",
-              fontSize: "14px",
-              backgroundColor: "#fff",
-              cursor: "pointer",
-            }}
-          >
-            <option value="Pending">Pending</option>
-            <option value="Approved">Approved</option>
-            <option value="Rejected">Rejected</option>
-            <option value="In Process">In Process</option>
-          </select>
-        </div>
-      </div>
+      <s-stack direction="inline" gap="base" style={{ marginTop: "12px" }}>
+        <s-date-field
+          label="Start date"
+          value={localStartDate}
+          onChange={handleStartDateChange}
+          disabled={isUpdating}
+        />
+        <s-date-field
+          label="End date"
+          value={localEndDate}
+          onChange={handleEndDateChange}
+          disabled={isUpdating}
+        />
+        <s-select
+          label="Status"
+          value={normalizedStatus}
+          onChange={handleStatusChange}
+          disabled={isUpdating}
+        >
+          <s-option value="Pending">Pending</s-option>
+          <s-option value="Approved">Approved</s-option>
+          <s-option value="Rejected">Rejected</s-option>
+          <s-option value="In Process">In Process</s-option>
+        </s-select>
+      </s-stack>
 
       {isUpdating && (
-        <div style={{ marginTop: "12px", fontSize: "14px", color: "#0066cc" }}>
+        <s-text variant="bodySm" tone="info" style={{ marginTop: "8px", display: "block" }}>
           Updating warranty and sending notification...
-        </div>
+        </s-text>
       )}
-    </div>
+    </s-box>
   );
 }
 
@@ -516,6 +468,8 @@ export default function WarrantyListingPage() {
   };
 
   const handleWarrantyUpdate = () => {
+    // Increment refresh key to trigger re-fetch of data
+    setRefreshKey(prev => prev + 1);
     // Reload the page data after a short delay to ensure Shopify has processed the update
     setTimeout(() => {
       window.location.reload();
@@ -523,84 +477,58 @@ export default function WarrantyListingPage() {
   };
 
   return (
-    <div style={{ padding: "20px" }} key={refreshKey}>
-      <h1 style={{ fontSize: "24px", fontWeight: "600", marginBottom: "20px" }}>
-        Warranty Registrations
-      </h1>
-      
-      <div>
-        <h2 style={{ fontSize: "20px", fontWeight: "500", marginBottom: "16px" }}>Customers</h2>
-        
+    <s-page heading={`Warranty registrations`} key={refreshKey}>
+      <s-section heading="Customers">
         {customers.length === 0 ? (
-          <p>
-            No customers found with the <strong>warrantyregistered</strong> tag.
-          </p>
+          <s-paragraph>
+            No customers found with the{" "}
+            <s-text variant="bodyStrong">warrantyregistered</s-text> tag.
+          </s-paragraph>
         ) : (
           <>
-            <p style={{ fontSize: "14px", marginBottom: "16px", color: "#666" }}>
+            <s-text variant="bodySm">
               Showing page {currentPage} of {totalPages} (Total customers: {totalCustomers})
-            </p>
+            </s-text>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <s-stack direction="block" gap="base">
               {customers.map((customer) => (
-                <div
+                <s-box
                   key={customer.id}
-                  style={{
-                    padding: "16px",
-                    borderWidth: "1px",
-                    borderStyle: "solid",
-                    borderColor: "#e0e0e0",
-                    borderRadius: "4px",
-                    backgroundColor: "#f5f5f5",
-                  }}
+                  padding="base"
+                  borderWidth="base"
+                  borderRadius="base"
+                  background="subdued"
                 >
                   {/* Customer header */}
-                  <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "16px", flexWrap: "wrap" }}>
-                    <strong style={{ fontSize: "16px" }}>
+                  <s-stack direction="inline" gap="base" alignItems="center">
+                    <s-text variant="bodyStrong">
                       {customer.displayName || "Unnamed customer"}
-                    </strong>
-                    <span style={{
-                      padding: "4px 8px",
-                      borderRadius: "4px",
-                      backgroundColor: "#e3f2fd",
-                      fontSize: "12px",
-                    }}>
+                    </s-text>
+                    <s-badge tone="info">
                       {customer.email || "No email"}
-                    </span>
-                    <span style={{
-                      padding: "4px 8px",
-                      borderRadius: "4px",
-                      backgroundColor: "#e3f2fd",
-                      fontSize: "12px",
-                    }}>
+                    </s-badge>
+                    <s-badge tone="info">
                       {customer.phone || "No phone"}
-                    </span>
-                    <button
+                    </s-badge>
+                    <s-button
+                      variant="tertiary"
                       onClick={() =>
                         shopify.intents.invoke?.("edit:shopify/Customer", {
                           value: customer.id,
                         })
                       }
-                      style={{
-                        padding: "6px 12px",
-                        borderRadius: "4px",
-                        border: "1px solid #ccc",
-                        backgroundColor: "#fff",
-                        cursor: "pointer",
-                        fontSize: "12px",
-                      }}
                     >
                       View customer
-                    </button>
-                  </div>
+                    </s-button>
+                  </s-stack>
 
                   {/* Warranties for this customer */}
                   {customer.warranties.length === 0 ? (
-                    <p style={{ margin: "12px 0 0 0", color: "#666" }}>
+                    <s-paragraph>
                       This customer has no warranty activation records linked.
-                    </p>
+                    </s-paragraph>
                   ) : (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                    <s-stack direction="block" gap="base">
                       {customer.warranties.map((warranty) => (
                         <AutoUpdateWarranty
                           key={warranty.id}
@@ -609,11 +537,11 @@ export default function WarrantyListingPage() {
                           onUpdate={handleWarrantyUpdate}
                         />
                       ))}
-                    </div>
+                    </s-stack>
                   )}
-                </div>
+                </s-box>
               ))}
-            </div>
+            </s-stack>
 
             {/* Pagination Component */}
             <Pagination
@@ -624,8 +552,8 @@ export default function WarrantyListingPage() {
             />
           </>
         )}
-      </div>
-    </div>
+      </s-section>
+    </s-page>
   );
 }
 
