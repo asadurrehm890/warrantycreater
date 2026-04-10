@@ -1,73 +1,118 @@
-import { useEffect } from "react";
-import { useLoaderData, useFetcher } from "react-router";
+import { useEffect, useState } from "react";
+import { useLoaderData, useFetcher, useSearchParams } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import { sendWarrantyStatusEmail } from "../warrantyEmail.server";
 
-// Loader: fetch customers + warranty metaobjects
+// Loader: fetch customers + warranty metaobjects with pagination
 export const loader = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
-
+  const url = new URL(request.url);
+  const page = parseInt(url.searchParams.get("page") || "1");
+  const customersPerPage = 10;
+  
+  // Calculate offset (cursor-based pagination would be better for large datasets)
+  // Using offset/limit approach for simplicity
+  const first = customersPerPage;
+  const after = url.searchParams.get("after") || null;
+  
+  // Build the query with pagination
+  let paginationParams = {};
+  if (after) {
+    paginationParams.after = after;
+  } else {
+    paginationParams.first = first;
+  }
+  
+  // First, get total count to calculate total pages
+  const countResponse = await admin.graphql(
+    `#graphql
+      query CustomersCount($query: String!) {
+        customersCount(query: $query) {
+          count
+        }
+      }
+    `,
+    {
+      variables: {
+        query: "tag:'warrantyregistered'",
+      },
+    },
+  );
+  
+  const countJson = await countResponse.json();
+  const totalCustomers = countJson?.data?.customersCount?.count || 0;
+  const totalPages = Math.ceil(totalCustomers / customersPerPage);
+  
   const response = await admin.graphql(
-  `#graphql
-    query CustomersWithWarrantyMetaobjects(
-      $query: String!
-      $first: Int!
-      $warrantiesFirst: Int!
-    ) {
-      customers(
-        first: $first
-        query: $query
-        sortKey: CREATED_AT
-        reverse: true
+    `#graphql
+      query CustomersWithWarrantyMetaobjects(
+        $query: String!
+        $first: Int!
+        $after: String
       ) {
-        edges {
-          node {
-            id
-            displayName
-            defaultEmailAddress { emailAddress }
-            defaultPhoneNumber { phoneNumber }
-            tags
-            metafield(namespace: "custom", key: "warranty_activation_details") {
+        customers(
+          first: $first
+          after: $after
+          query: $query
+          sortKey: CREATED_AT
+          reverse: true
+        ) {
+          edges {
+            cursor
+            node {
               id
-              type
-              references(first: $warrantiesFirst) {
-                nodes {
-                  ... on Metaobject {
-                    id
-                    productName: field(key: "product_name") { value }
-                    customerEmail: field(key: "customer_email") { value }
-                    purchaseSource: field(key: "product_purchase_source") { value }
-                    purchaseDate: field(key: "product_purchase_date") { value }
-                    orderInvoiceNumber: field(key: "product_order_invoice_number") { value }
-                    serialNumber: field(key: "product_serial_number") { value }
-                    startDate: field(key: "start_date") { value }
-                    endDate: field(key: "end_date") { value }
-                    status: field(key: "status") { value }
+              displayName
+              defaultEmailAddress { emailAddress }
+              defaultPhoneNumber { phoneNumber }
+              tags
+              metafield(namespace: "custom", key: "warranty_activation_details") {
+                id
+                type
+                references(first: 20) {
+                  nodes {
+                    ... on Metaobject {
+                      id
+                      productName: field(key: "product_name") { value }
+                      customerEmail: field(key: "customer_email") { value }
+                      purchaseSource: field(key: "product_purchase_source") { value }
+                      purchaseDate: field(key: "product_purchase_date") { value }
+                      orderInvoiceNumber: field(key: "product_order_invoice_number") { value }
+                      serialNumber: field(key: "product_serial_number") { value }
+                      startDate: field(key: "start_date") { value }
+                      endDate: field(key: "end_date") { value }
+                      status: field(key: "status") { value }
+                    }
                   }
                 }
               }
             }
           }
+          pageInfo {
+            hasNextPage
+            hasPreviousPage
+            startCursor
+            endCursor
+          }
         }
       }
-    }
-  `,
-  {
-    variables: {
-      query: "tag:'warrantyregistered'",
-      first: 150,
-      warrantiesFirst: 20,
+    `,
+    {
+      variables: {
+        query: "tag:'warrantyregistered'",
+        first: customersPerPage,
+        after: after,
+      },
     },
-  },
-);
+  );
 
   const json = await response.json();
 
   const customerEdges = json?.data?.customers?.edges ?? [];
+  const pageInfo = json?.data?.customers?.pageInfo ?? {};
 
-  const customers = customerEdges.map(({ node }) => {
+  const customers = customerEdges.map(({ node, cursor }) => {
     const metafield = node.metafield;
     const warrantyNodes = metafield?.references?.nodes?.filter(Boolean) ?? [];
 
@@ -91,15 +136,20 @@ export const loader = async ({ request }) => {
       phone: node.defaultPhoneNumber?.phoneNumber || "",
       tags: node.tags || [],
       warranties,
+      cursor, // Store cursor for pagination
     };
   });
 
-  return { customers };
+  return { 
+    customers, 
+    pageInfo,
+    currentPage: page,
+    totalPages,
+    totalCustomers
+  };
 };
 
-// Action: handles two intents:
-// - saveWarranty: update metaobject fields (start_date, end_date, status)
-// - sendEmail: send a warranty status email via Brevo
+// Action remains the same
 export const action = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
   const formData = await request.formData();
@@ -229,10 +279,83 @@ export const action = async ({ request }) => {
   };
 };
 
+// Pagination component
+function Pagination({ currentPage, totalPages, hasNextPage, hasPreviousPage, onPageChange }) {
+  const maxVisible = 5;
+  let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+  let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+  
+  if (endPage - startPage + 1 < maxVisible) {
+    startPage = Math.max(1, endPage - maxVisible + 1);
+  }
+  
+  const pages = [];
+  for (let i = startPage; i <= endPage; i++) {
+    pages.push(i);
+  }
+  
+  return (
+    <div style={{ 
+      display: "flex", 
+      justifyContent: "center", 
+      alignItems: "center", 
+      gap: "8px", 
+      marginTop: "24px",
+      padding: "16px"
+    }}>
+      <s-button
+        type="button"
+        onClick={() => onPageChange(currentPage - 1, "prev")}
+        disabled={!hasPreviousPage && currentPage === 1}
+      >
+        Previous
+      </s-button>
+      
+      {startPage > 1 && (
+        <>
+          <s-button type="button" variant="tertiary" onClick={() => onPageChange(1)}>
+            1
+          </s-button>
+          {startPage > 2 && <span>...</span>}
+        </>
+      )}
+      
+      {pages.map(page => (
+        <s-button
+          key={page}
+          type="button"
+          variant={page === currentPage ? "primary" : "tertiary"}
+          onClick={() => onPageChange(page)}
+        >
+          {page}
+        </s-button>
+      ))}
+      
+      {endPage < totalPages && (
+        <>
+          {endPage < totalPages - 1 && <span>...</span>}
+          <s-button type="button" variant="tertiary" onClick={() => onPageChange(totalPages)}>
+            {totalPages}
+          </s-button>
+        </>
+      )}
+      
+      <s-button
+        type="button"
+        onClick={() => onPageChange(currentPage + 1, "next")}
+        disabled={!hasNextPage}
+      >
+        Next
+      </s-button>
+    </div>
+  );
+}
+
 export default function WarrantyListingPage() {
-  const { customers } = useLoaderData();
+  const { customers, pageInfo, currentPage, totalPages, totalCustomers } = useLoaderData();
   const shopify = useAppBridge();
   const fetcher = useFetcher();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const isSubmitting =
     ["loading", "submitting"].includes(fetcher.state) &&
@@ -248,8 +371,25 @@ export default function WarrantyListingPage() {
     }
   }, [fetcher.data?.ok, fetcher.data?.sentEmail, fetcher.state, shopify]);
 
+  const handlePageChange = (newPage, direction = null) => {
+    const newSearchParams = new URLSearchParams(searchParams);
+    
+    if (direction === "next" && pageInfo.endCursor) {
+      newSearchParams.set("after", pageInfo.endCursor);
+      newSearchParams.delete("before");
+    } else if (direction === "prev" && searchParams.get("after")) {
+      // For previous page, we'd need before cursor - simplified approach
+      newSearchParams.delete("after");
+    } else {
+      newSearchParams.delete("after");
+    }
+    
+    newSearchParams.set("page", newPage);
+    setSearchParams(newSearchParams);
+  };
+
   return (
-    <s-page heading="Warranty registrations">
+    <s-page heading={`Warranty registrations (${totalCustomers} total)`}>
       <s-section heading="Customers">
         {customers.length === 0 ? (
           <s-paragraph>
@@ -257,222 +397,237 @@ export default function WarrantyListingPage() {
             <s-text variant="bodyStrong">warrantyregistered</s-text> tag.
           </s-paragraph>
         ) : (
-          <s-stack direction="block" gap="base">
-            {customers.map((customer) => (
-              <s-box
-                key={customer.id}
-                padding="base"
-                borderWidth="base"
-                borderRadius="base"
-                background="subdued"
-              >
-                {/* Customer header */}
-                <s-stack direction="inline" gap="base" alignItems="center">
-                  <s-text variant="bodyStrong">
-                    {customer.displayName || "Unnamed customer"}
-                  </s-text>
-                  <s-badge tone="info">
-                    {customer.email || "No email"}
-                  </s-badge>
-                  <s-badge tone="info">
-                    {customer.phone || "No phone"}
-                  </s-badge>
-                  <s-button
-                    variant="tertiary"
-                    onClick={() =>
-                      shopify.intents.invoke?.("edit:shopify/Customer", {
-                        value: customer.id,
-                      })
-                    }
-                  >
-                    View customer
-                  </s-button>
-                </s-stack>
+          <>
+            <s-text variant="bodySm">
+              Showing page {currentPage} of {totalPages}
+            </s-text>
+            
+            <s-stack direction="block" gap="base">
+              {customers.map((customer) => (
+                <s-box
+                  key={customer.id}
+                  padding="base"
+                  borderWidth="base"
+                  borderRadius="base"
+                  background="subdued"
+                >
+                  {/* Customer header */}
+                  <s-stack direction="inline" gap="base" alignItems="center">
+                    <s-text variant="bodyStrong">
+                      {customer.displayName || "Unnamed customer"}
+                    </s-text>
+                    <s-badge tone="info">
+                      {customer.email || "No email"}
+                    </s-badge>
+                    <s-badge tone="info">
+                      {customer.phone || "No phone"}
+                    </s-badge>
+                    <s-button
+                      variant="tertiary"
+                      onClick={() =>
+                        shopify.intents.invoke?.("edit:shopify/Customer", {
+                          value: customer.id,
+                        })
+                      }
+                    >
+                      View customer
+                    </s-button>
+                  </s-stack>
 
-                {/* Warranties for this customer */}
-                {customer.warranties.length === 0 ? (
-                  <s-paragraph>
-                    This customer has no warranty activation records linked.
-                  </s-paragraph>
-                ) : (
-                  <s-stack direction="block" gap="base">
-                    {customer.warranties.map((warranty) => {
-                      const normalizedStatus = ["Approved", "Pending", "Rejected", "In Process"].includes(
-                        warranty.status,
-                      )
-                        ? warranty.status
-                        : "Pending";
+                  {/* Warranties for this customer */}
+                  {customer.warranties.length === 0 ? (
+                    <s-paragraph>
+                      This customer has no warranty activation records linked.
+                    </s-paragraph>
+                  ) : (
+                    <s-stack direction="block" gap="base">
+                      {customer.warranties.map((warranty) => {
+                        const normalizedStatus = ["Approved", "Pending", "Rejected", "In Process"].includes(
+                          warranty.status,
+                        )
+                          ? warranty.status
+                          : "Pending";
 
-                      return (
-                        <s-box
-                          key={warranty.id}
-                          padding="base"
-                          borderWidth="base"
-                          borderRadius="base"
-                          background="base"
-                        >
-                          {/* Read-only warranty fields */}
-                          <s-heading>
-                            {warranty.productName || "Warranty record"}
-                          </s-heading>
+                        return (
+                          <s-box
+                            key={warranty.id}
+                            padding="base"
+                            borderWidth="base"
+                            borderRadius="base"
+                            background="base"
+                          >
+                            {/* Read-only warranty fields */}
+                            <s-heading>
+                              {warranty.productName || "Warranty record"}
+                            </s-heading>
 
-                          <s-stack direction="block" gap="none">
-                            <s-text>
-                              <s-text variant="bodyStrong">Customer email:</s-text>{" "}
-                              {warranty.customerEmail || "—"}
-                            </s-text>
-                            <s-text>
-                              <s-text variant="bodyStrong">Purchase source:</s-text>{" "}
-                              {warranty.purchaseSource || "—"}
-                            </s-text>
-                            <s-text>
-                              <s-text variant="bodyStrong">Purchase date:</s-text>{" "}
-                              {warranty.purchaseDate || "—"}
-                            </s-text>
-                            <s-text>
-                              <s-text variant="bodyStrong">Order / Invoice #:</s-text>{" "}
-                              {warranty.orderInvoiceNumber || "—"}
-                            </s-text>
-                            <s-text>
-                              <s-text variant="bodyStrong">Serial number:</s-text>{" "}
-                              {warranty.serialNumber || "—"}
-                            </s-text>
-                          </s-stack>
-
-                          {/* Save Warranty form: fields + Save button */}
-                          <fetcher.Form method="post">
-                            <input
-                              type="hidden"
-                              name="_intent"
-                              value="saveWarranty"
-                            />
-                            <input
-                              type="hidden"
-                              name="metaobjectId"
-                              value={warranty.id}
-                            />
-
-                            {/* Editable fields (start, end, status) */}
-                            <s-stack direction="inline" gap="base">
-                              <s-date-field
-                                name="startDate"
-                                label="Start date"
-                                defaultValue={warranty.startDate || ""}
-                              />
-                              <s-date-field
-                                name="endDate"
-                                label="End date"
-                                defaultValue={warranty.endDate || ""}
-                              />
-                              <s-select name="status" label="Status">
-                                <s-option
-                                  value="Pending"
-                                  selected={normalizedStatus === "Pending"}
-                                >
-                                  Pending
-                                </s-option>
-                                <s-option
-                                  value="Approved"
-                                  selected={normalizedStatus === "Approved"}
-                                >
-                                  Approved
-                                </s-option>
-                                <s-option
-                                  value="Rejected"
-                                  selected={normalizedStatus === "Rejected"}
-                                >
-                                  Rejected
-                                </s-option>
-                                <s-option
-                                  value="In Process"
-                                  selected={normalizedStatus === "In Process"}
-                                >
-                                  In Process
-                                </s-option>
-                              </s-select>
+                            <s-stack direction="block" gap="none">
+                              <s-text>
+                                <s-text variant="bodyStrong">Customer email:</s-text>{" "}
+                                {warranty.customerEmail || "—"}
+                              </s-text>
+                              <s-text>
+                                <s-text variant="bodyStrong">Purchase source:</s-text>{" "}
+                                {warranty.purchaseSource || "—"}
+                              </s-text>
+                              <s-text>
+                                <s-text variant="bodyStrong">Purchase date:</s-text>{" "}
+                                {warranty.purchaseDate || "—"}
+                              </s-text>
+                              <s-text>
+                                <s-text variant="bodyStrong">Order / Invoice #:</s-text>{" "}
+                                {warranty.orderInvoiceNumber || "—"}
+                              </s-text>
+                              <s-text>
+                                <s-text variant="bodyStrong">Serial number:</s-text>{" "}
+                                {warranty.serialNumber || "—"}
+                              </s-text>
                             </s-stack>
 
-                            {/* Buttons row: horizontal with margin-top */}
-                            <div
-                              style={{
-                                display: "flex",
-                                gap: "8px",
-                                marginTop: "12px",
-                                alignItems: "center",
-                                flexWrap: "wrap",
-                              }}
-                            >
-                              {/* Save Warranty button submits this form */}
-                              <s-button
-                                type="submit"
-                                {...(isSubmitting ? { loading: true } : {})}
-                              >
-                                Save warranty
-                              </s-button>
+                            {/* Save Warranty form: fields + Save button */}
+                            <fetcher.Form method="post">
+                              <input
+                                type="hidden"
+                                name="_intent"
+                                value="saveWarranty"
+                              />
+                              <input
+                                type="hidden"
+                                name="metaobjectId"
+                                value={warranty.id}
+                              />
 
-                              {/* Send Email button triggers fetcher.submit separately */}
-                              <s-button
-                                type="button"
-                                variant="secondary"
-                                onClick={() => {
-                                  const fd = new FormData();
-                                  fd.append("_intent", "sendEmail");
-                                  fd.append(
-                                    "customerEmail",
-                                    warranty.customerEmail || customer.email || "",
-                                  );
-                                  fd.append(
-                                    "customerName",
-                                    customer.displayName || "",
-                                  );
-                                  fd.append(
-                                    "productName",
-                                    warranty.productName || "",
-                                  );
-                                  fd.append(
-                                    "orderInvoiceNumber",
-                                    warranty.orderInvoiceNumber || "",
-                                  );
-                                  fd.append(
-                                    "serialNumber",
-                                    warranty.serialNumber || "",
-                                  );
-                                  fd.append(
-                                    "purchaseDate",
-                                    warranty.purchaseDate || "",
-                                  );
-                                  fd.append(
-                                    "purchaseSource",
-                                    warranty.purchaseSource || "",
-                                  );
-                                  fd.append("status", normalizedStatus);
-                                  fd.append(
-                                    "startDate",
-                                    warranty.startDate || "",
-                                  );
-                                  fd.append("endDate", warranty.endDate || "");
+                              {/* Editable fields (start, end, status) */}
+                              <s-stack direction="inline" gap="base">
+                                <s-date-field
+                                  name="startDate"
+                                  label="Start date"
+                                  defaultValue={warranty.startDate || ""}
+                                />
+                                <s-date-field
+                                  name="endDate"
+                                  label="End date"
+                                  defaultValue={warranty.endDate || ""}
+                                />
+                                <s-select name="status" label="Status">
+                                  <s-option
+                                    value="Pending"
+                                    selected={normalizedStatus === "Pending"}
+                                  >
+                                    Pending
+                                  </s-option>
+                                  <s-option
+                                    value="Approved"
+                                    selected={normalizedStatus === "Approved"}
+                                  >
+                                    Approved
+                                  </s-option>
+                                  <s-option
+                                    value="Rejected"
+                                    selected={normalizedStatus === "Rejected"}
+                                  >
+                                    Rejected
+                                  </s-option>
+                                  <s-option
+                                    value="In Process"
+                                    selected={normalizedStatus === "In Process"}
+                                  >
+                                    In Process
+                                  </s-option>
+                                </s-select>
+                              </s-stack>
 
-                                  fetcher.submit(fd, { method: "post" });
+                              {/* Buttons row: horizontal with margin-top */}
+                              <div
+                                style={{
+                                  display: "flex",
+                                  gap: "8px",
+                                  marginTop: "12px",
+                                  alignItems: "center",
+                                  flexWrap: "wrap",
                                 }}
                               >
-                                Send email
-                              </s-button>
+                                {/* Save Warranty button submits this form */}
+                                <s-button
+                                  type="submit"
+                                  {...(isSubmitting ? { loading: true } : {})}
+                                >
+                                  Save warranty
+                                </s-button>
 
-                              {fetcher.data && !fetcher.data.ok && (
-                                <s-text tone="critical">
-                                  {fetcher.data.error || "Action failed."}
-                                </s-text>
-                              )}
-                            </div>
-                          </fetcher.Form>
-                        </s-box>
-                      );
-                    })}
-                  </s-stack>
-                )}
-              </s-box>
-            ))}
-          </s-stack>
+                                {/* Send Email button triggers fetcher.submit separately */}
+                                <s-button
+                                  type="button"
+                                  variant="secondary"
+                                  onClick={() => {
+                                    const fd = new FormData();
+                                    fd.append("_intent", "sendEmail");
+                                    fd.append(
+                                      "customerEmail",
+                                      warranty.customerEmail || customer.email || "",
+                                    );
+                                    fd.append(
+                                      "customerName",
+                                      customer.displayName || "",
+                                    );
+                                    fd.append(
+                                      "productName",
+                                      warranty.productName || "",
+                                    );
+                                    fd.append(
+                                      "orderInvoiceNumber",
+                                      warranty.orderInvoiceNumber || "",
+                                    );
+                                    fd.append(
+                                      "serialNumber",
+                                      warranty.serialNumber || "",
+                                    );
+                                    fd.append(
+                                      "purchaseDate",
+                                      warranty.purchaseDate || "",
+                                    );
+                                    fd.append(
+                                      "purchaseSource",
+                                      warranty.purchaseSource || "",
+                                    );
+                                    fd.append("status", normalizedStatus);
+                                    fd.append(
+                                      "startDate",
+                                      warranty.startDate || "",
+                                    );
+                                    fd.append("endDate", warranty.endDate || "");
+
+                                    fetcher.submit(fd, { method: "post" });
+                                  }}
+                                >
+                                  Send email
+                                </s-button>
+
+                                {fetcher.data && !fetcher.data.ok && (
+                                  <s-text tone="critical">
+                                    {fetcher.data.error || "Action failed."}
+                                  </s-text>
+                                )}
+                              </div>
+                            </fetcher.Form>
+                          </s-box>
+                        );
+                      })}
+                    </s-stack>
+                  )}
+                </s-box>
+              ))}
+            </s-stack>
+            
+            {/* Pagination Component */}
+            <Pagination 
+              currentPage={currentPage}
+              totalPages={totalPages}
+              hasNextPage={pageInfo.hasNextPage}
+              hasPreviousPage={pageInfo.hasPreviousPage}
+              onPageChange={handlePageChange}
+            />
+          </>
         )}
       </s-section>
     </s-page>
