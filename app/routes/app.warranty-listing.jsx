@@ -1,26 +1,38 @@
 import { useEffect } from "react";
-import { useLoaderData, useFetcher, Link } from "react-router";
+import { useLoaderData, useFetcher, useSearchParams, Link } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import { sendWarrantyStatusEmail } from "../warrantyEmail.server";
 
-// Loader: fetch customers + warranty metaobjects, with pagination
+// Loader: fetch customers + warranty metaobjects, with bidirectional pagination
 export const loader = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
 
   const url = new URL(request.url);
   const after = url.searchParams.get("after");
+  const before = url.searchParams.get("before");
+
+  // Decide whether we are going forward (first/after) or backward (last/before)
+  const goingBackward = Boolean(before);
 
   const response = await admin.graphql(
     `#graphql
       query CustomersWithWarrantyMetaobjects(
         $query: String!
-        $first: Int!
+        $first: Int
+        $last: Int
         $after: String
+        $before: String
         $warrantiesFirst: Int!
       ) {
-        customers(first: $first, after: $after, query: $query) {
+        customers(
+          first: $first
+          last: $last
+          after: $after
+          before: $before
+          query: $query
+        ) {
           edges {
             cursor
             node {
@@ -64,9 +76,11 @@ export const loader = async ({ request }) => {
       variables: {
         // Metafield filter: only customers where warranty_activation_details has a value
         query: "metafields.custom.warranty_activation_details:*",
-        first: 50,           // ask for more from API so we can filter-down
-        after,               // cursor for next page, or null
-        warrantiesFirst: 20, // warranties per customer
+        first: goingBackward ? null : 50, // going forward or first page
+        last: goingBackward ? 50 : null,  // going backward
+        after: goingBackward ? null : after,
+        before: goingBackward ? before : null,
+        warrantiesFirst: 20,              // warranties per customer
       },
     },
   );
@@ -258,10 +272,15 @@ export default function WarrantyListingPage() {
   const { customers, pageInfo } = useLoaderData();
   const shopify = useAppBridge();
   const fetcher = useFetcher();
+  const [searchParams] = useSearchParams();
 
   const isSubmitting =
     ["loading", "submitting"].includes(fetcher.state) &&
     fetcher.formMethod === "POST";
+
+  const after = searchParams.get("after");
+  const before = searchParams.get("before");
+  const isFirstPage = !after && !before;
 
   useEffect(() => {
     if (fetcher.data?.ok && fetcher.state === "idle") {
@@ -495,18 +514,46 @@ export default function WarrantyListingPage() {
               ))}
             </s-stack>
 
-            {/* Pagination controls using React Router Link to avoid full-page redirect */}
+            {/* Pagination controls using React Router Link */}
             <s-stack
               direction="inline"
               gap="base"
               alignItems="center"
               paddingBlockStart="base"
             >
-              {pageInfo.hasNextPage && pageInfo.endCursor && (
-                <Link to={`.?after=${encodeURIComponent(pageInfo.endCursor)}`}>
-                  <s-button variant="secondary">Next page</s-button>
-                </Link>
-              )}
+              {/* Previous Button */}
+              <s-button
+                variant="secondary"
+                disabled={isFirstPage || !pageInfo.hasPreviousPage || !pageInfo.startCursor}
+              >
+                {isFirstPage || !pageInfo.hasPreviousPage || !pageInfo.startCursor ? (
+                  "Previous"
+                ) : (
+                  <Link
+                    to={`.?before=${encodeURIComponent(pageInfo.startCursor)}`}
+                    style={{ textDecoration: "none", color: "inherit" }}
+                  >
+                    Previous
+                  </Link>
+                )}
+              </s-button>
+
+              {/* Next Button */}
+              <s-button
+                variant="secondary"
+                disabled={!pageInfo.hasNextPage || !pageInfo.endCursor}
+              >
+                {!pageInfo.hasNextPage || !pageInfo.endCursor ? (
+                  "Next"
+                ) : (
+                  <Link
+                    to={`.?after=${encodeURIComponent(pageInfo.endCursor)}`}
+                    style={{ textDecoration: "none", color: "inherit" }}
+                  >
+                    Next
+                  </Link>
+                )}
+              </s-button>
             </s-stack>
           </>
         )}
