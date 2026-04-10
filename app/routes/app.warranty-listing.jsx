@@ -51,9 +51,12 @@ export const loader = async ({ request }) => {
     `,
     {
       variables: {
-        query: "tag:'warrantyregistered'",
-        first: 50,         // customers per page
-        warrantiesFirst: 20, // warranties per customer
+        // OLD:
+        // query: "tag:'warrantyregistered'",
+        // NEW: filter by metafield existence instead
+        query: "metafields.custom.warranty_activation_details:*",
+        first: 50,          // customers per page
+        warrantiesFirst: 20 // warranties per customer
       },
     },
   );
