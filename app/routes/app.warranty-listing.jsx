@@ -1,126 +1,68 @@
 import { useEffect } from "react";
-import {
-  useLoaderData,
-  useFetcher,
-  useSearchParams,
-  Link,
-} from "react-router";
+import { useLoaderData, useFetcher } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import { sendWarrantyStatusEmail } from "../warrantyEmail.server";
 
-// Loader: fetch customers + warranty metaobjects, with bidirectional pagination
+// Loader: fetch customers + warranty metaobjects
 export const loader = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
 
-  const url = new URL(request.url);
-  const after = url.searchParams.get("after");
-  const before = url.searchParams.get("before");
-
-  const PAGE_SIZE = 20; // Number of customers per page
-  const goingBackward = !!before;
-
-  let response;
-  try {
-    response = await admin.graphql(
-      `#graphql
-        query CustomersWithWarrantyMetaobjects(
-          $query: String!
-          $first: Int
-          $last: Int
-          $after: String
-          $before: String
-          $warrantiesFirst: Int!
-        ) {
-          customers(
-            first: $first
-            last: $last
-            after: $after
-            before: $before
-            query: $query
-            sortKey: CREATED_AT
-            reverse: true
-          ) {
-            edges {
-              cursor
-              node {
+  const response = await admin.graphql(
+    `#graphql
+      query CustomersWithWarrantyMetaobjects(
+        $query: String!
+        $first: Int!
+        $warrantiesFirst: Int!
+      ) {
+        customers(first: $first, query: $query) {
+          edges {
+            node {
+              id
+              displayName
+              defaultEmailAddress { emailAddress }
+              defaultPhoneNumber { phoneNumber }
+              tags
+              metafield(namespace: "custom", key: "warranty_activation_details") {
                 id
-                displayName
-                defaultEmailAddress { emailAddress }
-                defaultPhoneNumber { phoneNumber }
-                tags
-                metafield(namespace: "custom", key: "warranty_activation_details") {
-                  id
-                  type
-                  references(first: $warrantiesFirst) {
-                    nodes {
-                      ... on Metaobject {
-                        id
-                        productName: field(key: "product_name") { value }
-                        customerEmail: field(key: "customer_email") { value }
-                        purchaseSource: field(key: "product_purchase_source") { value }
-                        purchaseDate: field(key: "product_purchase_date") { value }
-                        orderInvoiceNumber: field(key: "product_order_invoice_number") { value }
-                        serialNumber: field(key: "product_serial_number") { value }
-                        startDate: field(key: "start_date") { value }
-                        endDate: field(key: "end_date") { value }
-                        status: field(key: "status") { value }
-                      }
+                type
+                references(first: $warrantiesFirst) {
+                  nodes {
+                    ... on Metaobject {
+                      id
+                      productName: field(key: "product_name") { value }
+                      customerEmail: field(key: "customer_email") { value }
+                      purchaseSource: field(key: "product_purchase_source") { value }
+                      purchaseDate: field(key: "product_purchase_date") { value }
+                      orderInvoiceNumber: field(key: "product_order_invoice_number") { value }
+                      serialNumber: field(key: "product_serial_number") { value }
+                      startDate: field(key: "start_date") { value }
+                      endDate: field(key: "end_date") { value }
+                      status: field(key: "status") { value }
                     }
                   }
                 }
               }
             }
-            pageInfo {
-              hasNextPage
-              hasPreviousPage
-              endCursor
-              startCursor
-            }
           }
         }
-      `,
-      {
-        variables: {
-          // Customers must have warranty_activation_details metafield set
-          query: "metafields.custom.warranty_activation_details:*",
-          first: goingBackward ? null : PAGE_SIZE,
-          last: goingBackward ? PAGE_SIZE : null,
-          after: goingBackward ? null : after,
-          before: goingBackward ? before : null,
-          warrantiesFirst: 20, // warranties per customer
-        },
+      }
+    `,
+    {
+      variables: {
+        query: "tag:'warrantyregistered'",
+        first: 150,         // customers per page
+        warrantiesFirst: 20, // warranties per customer
       },
-    );
-  } catch (error) {
-    // Handle "Invalid cursor for current pagination sort" gracefully
-    const isInvalidCursorError =
-      error?.response?.body?.errors?.graphQLErrors?.some((gqlError) =>
-        gqlError?.message?.includes("Invalid cursor for current pagination sort."),
-      );
-
-    if (isInvalidCursorError) {
-      const cleanUrl = new URL(request.url);
-      cleanUrl.searchParams.delete("after");
-      cleanUrl.searchParams.delete("before");
-      throw new Response(null, {
-        status: 302,
-        headers: { Location: cleanUrl.pathname + cleanUrl.search },
-      });
-    }
-
-    // For any other error, let the route boundary handle it
-    throw error;
-  }
+    },
+  );
 
   const json = await response.json();
 
-  const customerConnection = json?.data?.customers;
-  const edges = customerConnection?.edges ?? [];
+  const customerEdges = json?.data?.customers?.edges ?? [];
 
-  // Map customers and warranties
-  let customers = edges.map(({ node }) => {
+  const customers = customerEdges.map(({ node }) => {
     const metafield = node.metafield;
     const warrantyNodes = metafield?.references?.nodes?.filter(Boolean) ?? [];
 
@@ -147,21 +89,7 @@ export const loader = async ({ request }) => {
     };
   });
 
-  // Safety: drop any customers that somehow have 0 warranties
-  customers = customers.filter((c) => c.warranties.length > 0);
-
-  const pageInfo = customerConnection?.pageInfo ?? {
-    hasNextPage: false,
-    hasPreviousPage: false,
-    endCursor: null,
-    startCursor: null,
-  };
-
-  return {
-    customers,
-    pageInfo,
-    pageSize: PAGE_SIZE,
-  };
+  return { customers };
 };
 
 // Action: handles two intents:
@@ -297,18 +225,13 @@ export const action = async ({ request }) => {
 };
 
 export default function WarrantyListingPage() {
-  const { customers, pageInfo } = useLoaderData();
+  const { customers } = useLoaderData();
   const shopify = useAppBridge();
   const fetcher = useFetcher();
-  const [searchParams] = useSearchParams();
 
   const isSubmitting =
     ["loading", "submitting"].includes(fetcher.state) &&
     fetcher.formMethod === "POST";
-
-  const after = searchParams.get("after");
-  const before = searchParams.get("before");
-  const isFirstPage = !after && !before;
 
   useEffect(() => {
     if (fetcher.data?.ok && fetcher.state === "idle") {
@@ -326,44 +249,47 @@ export default function WarrantyListingPage() {
         {customers.length === 0 ? (
           <s-paragraph>
             No customers found with the{" "}
-            <s-text variant="bodyStrong">warranty_activation_details</s-text>{" "}
-            metafield populated.
+            <s-text variant="bodyStrong">warrantyregistered</s-text> tag.
           </s-paragraph>
         ) : (
-          <>
-            <s-stack direction="block" gap="base">
-              {customers.map((customer) => (
-                <s-box
-                  key={customer.id}
-                  padding="base"
-                  borderWidth="base"
-                  borderRadius="base"
-                  background="subdued"
-                >
-                  {/* Customer header */}
-                  <s-stack direction="inline" gap="base" alignItems="center">
-                    <s-text variant="bodyStrong">
-                      {customer.displayName || "Unnamed customer"}
-                    </s-text>
-                    <s-badge tone="info">
-                      {customer.email || "No email"}
-                    </s-badge>
-                    <s-badge tone="info">
-                      {customer.phone || "No phone"}
-                    </s-badge>
-                    <s-button
-                      variant="tertiary"
-                      onClick={() =>
-                        shopify.intents.invoke?.("edit:shopify/Customer", {
-                          value: customer.id,
-                        })
-                      }
-                    >
-                      View customer
-                    </s-button>
-                  </s-stack>
+          <s-stack direction="block" gap="base">
+            {customers.map((customer) => (
+              <s-box
+                key={customer.id}
+                padding="base"
+                borderWidth="base"
+                borderRadius="base"
+                background="subdued"
+              >
+                {/* Customer header */}
+                <s-stack direction="inline" gap="base" alignItems="center">
+                  <s-text variant="bodyStrong">
+                    {customer.displayName || "Unnamed customer"}
+                  </s-text>
+                  <s-badge tone="info">
+                    {customer.email || "No email"}
+                  </s-badge>
+                  <s-badge tone="info">
+                    {customer.phone || "No phone"}
+                  </s-badge>
+                  <s-button
+                    variant="tertiary"
+                    onClick={() =>
+                      shopify.intents.invoke?.("edit:shopify/Customer", {
+                        value: customer.id,
+                      })
+                    }
+                  >
+                    View customer
+                  </s-button>
+                </s-stack>
 
-                  {/* Warranties for this customer */}
+                {/* Warranties for this customer */}
+                {customer.warranties.length === 0 ? (
+                  <s-paragraph>
+                    This customer has no warranty activation records linked.
+                  </s-paragraph>
+                ) : (
                   <s-stack direction="block" gap="base">
                     {customer.warranties.map((warranty) => {
                       const normalizedStatus = ["Approved", "Pending", "Rejected", "In Process"].includes(
@@ -388,7 +314,7 @@ export default function WarrantyListingPage() {
                           <s-stack direction="block" gap="none">
                             <s-text>
                               <s-text variant="bodyStrong">Customer email:</s-text>{" "}
-                              {warranty.customerEmail || customer.email || "—"}
+                              {warranty.customerEmail || "—"}
                             </s-text>
                             <s-text>
                               <s-text variant="bodyStrong">Purchase source:</s-text>{" "}
@@ -538,52 +464,10 @@ export default function WarrantyListingPage() {
                       );
                     })}
                   </s-stack>
-                </s-box>
-              ))}
-            </s-stack>
-
-            {/* Pagination controls using React Router Link */}
-            <s-stack
-              direction="inline"
-              gap="base"
-              alignItems="center"
-              paddingBlockStart="base"
-            >
-              {/* Previous Button */}
-              <s-button
-                variant="secondary"
-                disabled={isFirstPage || !pageInfo.hasPreviousPage || !pageInfo.startCursor}
-              >
-                {isFirstPage || !pageInfo.hasPreviousPage || !pageInfo.startCursor ? (
-                  "Previous"
-                ) : (
-                  <Link
-                    to={`.?before=${encodeURIComponent(pageInfo.startCursor)}`}
-                    style={{ textDecoration: "none", color: "inherit" }}
-                  >
-                    Previous
-                  </Link>
                 )}
-              </s-button>
-
-              {/* Next Button */}
-              <s-button
-                variant="secondary"
-                disabled={!pageInfo.hasNextPage || !pageInfo.endCursor}
-              >
-                {!pageInfo.hasNextPage || !pageInfo.endCursor ? (
-                  "Next"
-                ) : (
-                  <Link
-                    to={`.?after=${encodeURIComponent(pageInfo.endCursor)}`}
-                    style={{ textDecoration: "none", color: "inherit" }}
-                  >
-                    Next
-                  </Link>
-                )}
-              </s-button>
-            </s-stack>
-          </>
+              </s-box>
+            ))}
+          </s-stack>
         )}
       </s-section>
     </s-page>
