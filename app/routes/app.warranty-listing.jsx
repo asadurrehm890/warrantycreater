@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useLoaderData, useFetcher, useSearchParams } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
@@ -9,23 +9,15 @@ import { sendWarrantyStatusEmail } from "../warrantyEmail.server";
 export const loader = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
   const url = new URL(request.url);
+
+  // Logical page number (for display)
   const page = parseInt(url.searchParams.get("page") || "1");
   const customersPerPage = 10;
-  
-  // Calculate offset (cursor-based pagination would be better for large datasets)
-  // Using offset/limit approach for simplicity
-  const first = customersPerPage;
+
+  // Cursor for forward pagination
   const after = url.searchParams.get("after") || null;
-  
-  // Build the query with pagination
-  let paginationParams = {};
-  if (after) {
-    paginationParams.after = after;
-  } else {
-    paginationParams.first = first;
-  }
-  
-  // First, get total count to calculate total pages
+
+  // Get total count to calculate total pages
   const countResponse = await admin.graphql(
     `#graphql
       query CustomersCount($query: String!) {
@@ -40,11 +32,11 @@ export const loader = async ({ request }) => {
       },
     },
   );
-  
+
   const countJson = await countResponse.json();
   const totalCustomers = countJson?.data?.customersCount?.count || 0;
-  const totalPages = Math.ceil(totalCustomers / customersPerPage);
-  
+  const totalPages = Math.ceil(totalCustomers / customersPerPage) || 1;
+
   const response = await admin.graphql(
     `#graphql
       query CustomersWithWarrantyMetaobjects(
@@ -136,20 +128,20 @@ export const loader = async ({ request }) => {
       phone: node.defaultPhoneNumber?.phoneNumber || "",
       tags: node.tags || [],
       warranties,
-      cursor, // Store cursor for pagination
+      cursor, // Store cursor for potential advanced pagination
     };
   });
 
-  return { 
-    customers, 
+  return {
+    customers,
     pageInfo,
     currentPage: page,
     totalPages,
-    totalCustomers
+    totalCustomers,
   };
 };
 
-// Action remains the same
+// Action: same as before
 export const action = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
   const formData = await request.formData();
@@ -279,67 +271,31 @@ export const action = async ({ request }) => {
   };
 };
 
-// Pagination component
-function Pagination({ currentPage, totalPages, hasNextPage, hasPreviousPage, onPageChange }) {
-  const maxVisible = 5;
-  let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
-  let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-  
-  if (endPage - startPage + 1 < maxVisible) {
-    startPage = Math.max(1, endPage - maxVisible + 1);
-  }
-  
-  const pages = [];
-  for (let i = startPage; i <= endPage; i++) {
-    pages.push(i);
-  }
-  
+// Simple Pagination component: only Previous / Next + current page display
+function Pagination({ currentPage, hasNextPage, hasPreviousPage, onPageChange }) {
   return (
-    <div style={{ 
-      display: "flex", 
-      justifyContent: "center", 
-      alignItems: "center", 
-      gap: "8px", 
-      marginTop: "24px",
-      padding: "16px"
-    }}>
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        gap: "8px",
+        marginTop: "24px",
+        padding: "16px",
+      }}
+    >
       <s-button
         type="button"
         onClick={() => onPageChange(currentPage - 1, "prev")}
-        disabled={!hasPreviousPage && currentPage === 1}
+        disabled={currentPage <= 1 || !hasPreviousPage}
       >
         Previous
       </s-button>
-      
-      {startPage > 1 && (
-        <>
-          <s-button type="button" variant="tertiary" onClick={() => onPageChange(1)}>
-            1
-          </s-button>
-          {startPage > 2 && <span>...</span>}
-        </>
-      )}
-      
-      {pages.map(page => (
-        <s-button
-          key={page}
-          type="button"
-          variant={page === currentPage ? "primary" : "tertiary"}
-          onClick={() => onPageChange(page)}
-        >
-          {page}
-        </s-button>
-      ))}
-      
-      {endPage < totalPages && (
-        <>
-          {endPage < totalPages - 1 && <span>...</span>}
-          <s-button type="button" variant="tertiary" onClick={() => onPageChange(totalPages)}>
-            {totalPages}
-          </s-button>
-        </>
-      )}
-      
+
+      <s-text variant="bodySm">
+        Page {currentPage}
+      </s-text>
+
       <s-button
         type="button"
         onClick={() => onPageChange(currentPage + 1, "next")}
@@ -373,18 +329,24 @@ export default function WarrantyListingPage() {
 
   const handlePageChange = (newPage, direction = null) => {
     const newSearchParams = new URLSearchParams(searchParams);
-    
+
+    // Forward: use endCursor as "after"
     if (direction === "next" && pageInfo.endCursor) {
       newSearchParams.set("after", pageInfo.endCursor);
-      newSearchParams.delete("before");
-    } else if (direction === "prev" && searchParams.get("after")) {
-      // For previous page, we'd need before cursor - simplified approach
-      newSearchParams.delete("after");
-    } else {
-      newSearchParams.delete("after");
+      newSearchParams.set("page", String(newPage));
     }
-    
-    newSearchParams.set("page", newPage);
+    // Backward: simple behavior - reset to first page (no cursor)
+    else if (direction === "prev") {
+      newSearchParams.delete("after");
+      newSearchParams.set("page", "1");
+      newPage = 1;
+    } else {
+      // Fallback: reset to first page
+      newSearchParams.delete("after");
+      newSearchParams.set("page", "1");
+      newPage = 1;
+    }
+
     setSearchParams(newSearchParams);
   };
 
@@ -401,7 +363,7 @@ export default function WarrantyListingPage() {
             <s-text variant="bodySm">
               Showing page {currentPage} of {totalPages}
             </s-text>
-            
+
             <s-stack direction="block" gap="base">
               {customers.map((customer) => (
                 <s-box
@@ -618,11 +580,10 @@ export default function WarrantyListingPage() {
                 </s-box>
               ))}
             </s-stack>
-            
+
             {/* Pagination Component */}
-            <Pagination 
+            <Pagination
               currentPage={currentPage}
-              totalPages={totalPages}
               hasNextPage={pageInfo.hasNextPage}
               hasPreviousPage={pageInfo.hasPreviousPage}
               onPageChange={handlePageChange}
