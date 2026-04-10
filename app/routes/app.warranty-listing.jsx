@@ -5,19 +5,24 @@ import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
 import { sendWarrantyStatusEmail } from "../warrantyEmail.server";
 
-// Loader: fetch customers + warranty metaobjects
+// Loader: fetch customers + warranty metaobjects, with pagination
 export const loader = async ({ request }) => {
   const { admin } = await authenticate.admin(request);
+
+  const url = new URL(request.url);
+  const after = url.searchParams.get("after");
 
   const response = await admin.graphql(
     `#graphql
       query CustomersWithWarrantyMetaobjects(
         $query: String!
         $first: Int!
+        $after: String
         $warrantiesFirst: Int!
       ) {
-        customers(first: $first, query: $query) {
+        customers(first: $first, after: $after, query: $query) {
           edges {
+            cursor
             node {
               id
               displayName
@@ -46,53 +51,72 @@ export const loader = async ({ request }) => {
               }
             }
           }
+          pageInfo {
+            hasNextPage
+            hasPreviousPage
+            endCursor
+            startCursor
+          }
         }
       }
     `,
     {
       variables: {
-        // OLD:
-        // query: "tag:'warrantyregistered'",
-        // NEW: filter by metafield existence instead
+        // Metafield filter: only customers where warranty_activation_details has a value
         query: "metafields.custom.warranty_activation_details:*",
-        first: 50,          // customers per page
-        warrantiesFirst: 20 // warranties per customer
+        first: 20,           // customers per page (tune as you like)
+        after,               // cursor for next page, or null
+        warrantiesFirst: 20, // warranties per customer
       },
     },
   );
 
   const json = await response.json();
 
-  const customerEdges = json?.data?.customers?.edges ?? [];
+  const customerConnection = json?.data?.customers;
+  const edges = customerConnection?.edges ?? [];
 
-  const customers = customerEdges.map(({ node }) => {
-    const metafield = node.metafield;
-    const warrantyNodes = metafield?.references?.nodes?.filter(Boolean) ?? [];
+  // Map and then filter to keep only customers with at least one warranty
+  const customers = edges
+    .map(({ node }) => {
+      const metafield = node.metafield;
+      const warrantyNodes = metafield?.references?.nodes?.filter(Boolean) ?? [];
 
-    const warranties = warrantyNodes.map((mo) => ({
-      id: mo.id,
-      productName: mo.productName?.value || "",
-      customerEmail: mo.customerEmail?.value || "",
-      purchaseSource: mo.purchaseSource?.value || "",
-      purchaseDate: mo.purchaseDate?.value || "",
-      orderInvoiceNumber: mo.orderInvoiceNumber?.value || "",
-      serialNumber: mo.serialNumber?.value || "",
-      startDate: mo.startDate?.value || "",
-      endDate: mo.endDate?.value || "",
-      status: mo.status?.value || "",
-    }));
+      const warranties = warrantyNodes.map((mo) => ({
+        id: mo.id,
+        productName: mo.productName?.value || "",
+        customerEmail: mo.customerEmail?.value || "",
+        purchaseSource: mo.purchaseSource?.value || "",
+        purchaseDate: mo.purchaseDate?.value || "",
+        orderInvoiceNumber: mo.orderInvoiceNumber?.value || "",
+        serialNumber: mo.serialNumber?.value || "",
+        startDate: mo.startDate?.value || "",
+        endDate: mo.endDate?.value || "",
+        status: mo.status?.value || "",
+      }));
 
-    return {
-      id: node.id,
-      displayName: node.displayName,
-      email: node.defaultEmailAddress?.emailAddress || "",
-      phone: node.defaultPhoneNumber?.phoneNumber || "",
-      tags: node.tags || [],
-      warranties,
-    };
-  });
+      return {
+        id: node.id,
+        displayName: node.displayName,
+        email: node.defaultEmailAddress?.emailAddress || "",
+        phone: node.defaultPhoneNumber?.phoneNumber || "",
+        tags: node.tags || [],
+        warranties,
+      };
+    })
+    .filter((customer) => customer.warranties.length > 0);
 
-  return { customers };
+  const pageInfo = customerConnection?.pageInfo ?? {
+    hasNextPage: false,
+    hasPreviousPage: false,
+    endCursor: null,
+    startCursor: null,
+  };
+
+  return {
+    customers,
+    pageInfo,
+  };
 };
 
 // Action: handles two intents:
@@ -228,7 +252,7 @@ export const action = async ({ request }) => {
 };
 
 export default function WarrantyListingPage() {
-  const { customers } = useLoaderData();
+  const { customers, pageInfo } = useLoaderData();
   const shopify = useAppBridge();
   const fetcher = useFetcher();
 
@@ -252,47 +276,44 @@ export default function WarrantyListingPage() {
         {customers.length === 0 ? (
           <s-paragraph>
             No customers found with the{" "}
-            <s-text variant="bodyStrong">warrantyregistered</s-text> tag.
+            <s-text variant="bodyStrong">warranty_activation_details</s-text>{" "}
+            metafield populated.
           </s-paragraph>
         ) : (
-          <s-stack direction="block" gap="base">
-            {customers.map((customer) => (
-              <s-box
-                key={customer.id}
-                padding="base"
-                borderWidth="base"
-                borderRadius="base"
-                background="subdued"
-              >
-                {/* Customer header */}
-                <s-stack direction="inline" gap="base" alignItems="center">
-                  <s-text variant="bodyStrong">
-                    {customer.displayName || "Unnamed customer"}
-                  </s-text>
-                  <s-badge tone="info">
-                    {customer.email || "No email"}
-                  </s-badge>
-                  <s-badge tone="info">
-                    {customer.phone || "No phone"}
-                  </s-badge>
-                  <s-button
-                    variant="tertiary"
-                    onClick={() =>
-                      shopify.intents.invoke?.("edit:shopify/Customer", {
-                        value: customer.id,
-                      })
-                    }
-                  >
-                    View customer
-                  </s-button>
-                </s-stack>
+          <>
+            <s-stack direction="block" gap="base">
+              {customers.map((customer) => (
+                <s-box
+                  key={customer.id}
+                  padding="base"
+                  borderWidth="base"
+                  borderRadius="base"
+                  background="subdued"
+                >
+                  {/* Customer header */}
+                  <s-stack direction="inline" gap="base" alignItems="center">
+                    <s-text variant="bodyStrong">
+                      {customer.displayName || "Unnamed customer"}
+                    </s-text>
+                    <s-badge tone="info">
+                      {customer.email || "No email"}
+                    </s-badge>
+                    <s-badge tone="info">
+                      {customer.phone || "No phone"}
+                    </s-badge>
+                    <s-button
+                      variant="tertiary"
+                      onClick={() =>
+                        shopify.intents.invoke?.("edit:shopify/Customer", {
+                          value: customer.id,
+                        })
+                      }
+                    >
+                      View customer
+                    </s-button>
+                  </s-stack>
 
-                {/* Warranties for this customer */}
-                {customer.warranties.length === 0 ? (
-                  <s-paragraph>
-                    This customer has no warranty activation records linked.
-                  </s-paragraph>
-                ) : (
+                  {/* Warranties for this customer */}
                   <s-stack direction="block" gap="base">
                     {customer.warranties.map((warranty) => {
                       const normalizedStatus = ["Approved", "Pending", "Rejected", "In Process"].includes(
@@ -317,7 +338,7 @@ export default function WarrantyListingPage() {
                           <s-stack direction="block" gap="none">
                             <s-text>
                               <s-text variant="bodyStrong">Customer email:</s-text>{" "}
-                              {warranty.customerEmail || "—"}
+                              {warranty.customerEmail || customer.email || "—"}
                             </s-text>
                             <s-text>
                               <s-text variant="bodyStrong">Purchase source:</s-text>{" "}
@@ -467,10 +488,24 @@ export default function WarrantyListingPage() {
                       );
                     })}
                   </s-stack>
-                )}
-              </s-box>
-            ))}
-          </s-stack>
+                </s-box>
+              ))}
+            </s-stack>
+
+            {/* Simple pagination controls (Next page) */}
+            <s-stack
+              direction="inline"
+              gap="base"
+              alignItems="center"
+              paddingBlockStart="base"
+            >
+              {pageInfo.hasNextPage && pageInfo.endCursor && (
+                <a href={`?after=${encodeURIComponent(pageInfo.endCursor)}`}>
+                  <s-button variant="secondary">Next page</s-button>
+                </a>
+              )}
+            </s-stack>
+          </>
         )}
       </s-section>
     </s-page>
