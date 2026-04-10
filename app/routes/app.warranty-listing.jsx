@@ -32,6 +32,8 @@ export const loader = async ({ request }) => {
           after: $after
           before: $before
           query: $query
+          sortKey: CREATED_AT
+          reverse: true
         ) {
           edges {
             cursor
