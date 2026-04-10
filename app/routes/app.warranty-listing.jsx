@@ -13,106 +13,86 @@ export const loader = async ({ request }) => {
   const after = url.searchParams.get("after");
   const before = url.searchParams.get("before");
 
+  // Decide whether we are going forward (first/after) or backward (last/before)
   const goingBackward = Boolean(before);
 
-  let response;
-  try {
-    response = await admin.graphql(
-      `#graphql
-        query CustomersWithWarrantyMetaobjects(
-          $query: String!
-          $first: Int
-          $last: Int
-          $after: String
-          $before: String
-          $warrantiesFirst: Int!
+  const response = await admin.graphql(
+    `#graphql
+      query CustomersWithWarrantyMetaobjects(
+        $query: String!
+        $first: Int
+        $last: Int
+        $after: String
+        $before: String
+        $warrantiesFirst: Int!
+      ) {
+        customers(
+          first: $first
+          last: $last
+          after: $after
+          before: $before
+          query: $query
+          sortKey: CREATED_AT
+          reverse: true
         ) {
-          customers(
-            first: $first
-            last: $last
-            after: $after
-            before: $before
-            query: $query
-            sortKey: CREATED_AT
-            reverse: true
-          ) {
-            edges {
-              cursor
-              node {
+          edges {
+            cursor
+            node {
+              id
+              displayName
+              defaultEmailAddress { emailAddress }
+              defaultPhoneNumber { phoneNumber }
+              tags
+              metafield(namespace: "custom", key: "warranty_activation_details") {
                 id
-                displayName
-                defaultEmailAddress { emailAddress }
-                defaultPhoneNumber { phoneNumber }
-                tags
-                metafield(namespace: "custom", key: "warranty_activation_details") {
-                  id
-                  type
-                  references(first: $warrantiesFirst) {
-                    nodes {
-                      ... on Metaobject {
-                        id
-                        productName: field(key: "product_name") { value }
-                        customerEmail: field(key: "customer_email") { value }
-                        purchaseSource: field(key: "product_purchase_source") { value }
-                        purchaseDate: field(key: "product_purchase_date") { value }
-                        orderInvoiceNumber: field(key: "product_order_invoice_number") { value }
-                        serialNumber: field(key: "product_serial_number") { value }
-                        startDate: field(key: "start_date") { value }
-                        endDate: field(key: "end_date") { value }
-                        status: field(key: "status") { value }
-                      }
+                type
+                references(first: $warrantiesFirst) {
+                  nodes {
+                    ... on Metaobject {
+                      id
+                      productName: field(key: "product_name") { value }
+                      customerEmail: field(key: "customer_email") { value }
+                      purchaseSource: field(key: "product_purchase_source") { value }
+                      purchaseDate: field(key: "product_purchase_date") { value }
+                      orderInvoiceNumber: field(key: "product_order_invoice_number") { value }
+                      serialNumber: field(key: "product_serial_number") { value }
+                      startDate: field(key: "start_date") { value }
+                      endDate: field(key: "end_date") { value }
+                      status: field(key: "status") { value }
                     }
                   }
                 }
               }
             }
-            pageInfo {
-              hasNextPage
-              hasPreviousPage
-              endCursor
-              startCursor
-            }
+          }
+          pageInfo {
+            hasNextPage
+            hasPreviousPage
+            endCursor
+            startCursor
           }
         }
-      `,
-      {
-        variables: {
-          query: "metafields.custom.warranty_activation_details:*",
-          first: goingBackward ? null : 50,
-          last: goingBackward ? 50 : null,
-          after: goingBackward ? null : after,
-          before: goingBackward ? before : null,
-          warrantiesFirst: 20,
-        },
+      }
+    `,
+    {
+      variables: {
+        // Metafield filter: only customers where warranty_activation_details has a value
+        query: "metafields.custom.warranty_activation_details:*",
+        first: goingBackward ? null : 50, // going forward or first page
+        last: goingBackward ? 50 : null,  // going backward
+        after: goingBackward ? null : after,
+        before: goingBackward ? before : null,
+        warrantiesFirst: 20,              // warranties per customer
       },
-    );
-  } catch (error) {
-    // NEW: handle invalid cursor error gracefully
-    const isGraphqlCursorError =
-      error?.response?.body?.errors?.graphQLErrors?.some((gqlError) =>
-        gqlError?.message?.includes("Invalid cursor for current pagination sort."),
-      );
-
-    if (isGraphqlCursorError) {
-      // Option 1: redirect to first page (no cursor)
-      const cleanUrl = new URL(request.url);
-      cleanUrl.searchParams.delete("after");
-      cleanUrl.searchParams.delete("before");
-      throw new Response(null, {
-        status: 302,
-        headers: { Location: cleanUrl.pathname + cleanUrl.search },
-      });
-    }
-
-    // If it's some other error, rethrow to let the boundary handle it
-    throw error;
-  }
+    },
+  );
 
   const json = await response.json();
 
   const customerConnection = json?.data?.customers;
   const edges = customerConnection?.edges ?? [];
 
+  // Map and filter: keep only customers with at least one warranty
   let customers = edges
     .map(({ node }) => {
       const metafield = node.metafield;
@@ -142,6 +122,7 @@ export const loader = async ({ request }) => {
     })
     .filter((customer) => customer.warranties.length > 0);
 
+  // Limit page size in our app to 10 customers with warranties
   customers = customers.slice(0, 10);
 
   const pageInfo = customerConnection?.pageInfo ?? {
