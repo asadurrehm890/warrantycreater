@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useLoaderData, useFetcher } from "react-router";
+import { useLoaderData, useFetcher, Link } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
@@ -64,7 +64,7 @@ export const loader = async ({ request }) => {
       variables: {
         // Metafield filter: only customers where warranty_activation_details has a value
         query: "metafields.custom.warranty_activation_details:*",
-        first: 20,           // customers per page (tune as you like)
+        first: 50,           // ask for more from API so we can filter-down
         after,               // cursor for next page, or null
         warrantiesFirst: 20, // warranties per customer
       },
@@ -76,8 +76,8 @@ export const loader = async ({ request }) => {
   const customerConnection = json?.data?.customers;
   const edges = customerConnection?.edges ?? [];
 
-  // Map and then filter to keep only customers with at least one warranty
-  const customers = edges
+  // Map and filter: keep only customers with at least one warranty
+  let customers = edges
     .map(({ node }) => {
       const metafield = node.metafield;
       const warrantyNodes = metafield?.references?.nodes?.filter(Boolean) ?? [];
@@ -105,6 +105,9 @@ export const loader = async ({ request }) => {
       };
     })
     .filter((customer) => customer.warranties.length > 0);
+
+  // Limit page size in our app to 10 customers with warranties
+  customers = customers.slice(0, 10);
 
   const pageInfo = customerConnection?.pageInfo ?? {
     hasNextPage: false,
@@ -492,7 +495,7 @@ export default function WarrantyListingPage() {
               ))}
             </s-stack>
 
-            {/* Simple pagination controls (Next page) */}
+            {/* Pagination controls using React Router Link to avoid full-page redirect */}
             <s-stack
               direction="inline"
               gap="base"
@@ -500,9 +503,9 @@ export default function WarrantyListingPage() {
               paddingBlockStart="base"
             >
               {pageInfo.hasNextPage && pageInfo.endCursor && (
-                <a href={`?after=${encodeURIComponent(pageInfo.endCursor)}`}>
+                <Link to={`.?after=${encodeURIComponent(pageInfo.endCursor)}`}>
                   <s-button variant="secondary">Next page</s-button>
-                </a>
+                </Link>
               )}
             </s-stack>
           </>
