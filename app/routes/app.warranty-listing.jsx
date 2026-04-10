@@ -1,5 +1,10 @@
 import { useEffect } from "react";
-import { useLoaderData, useFetcher, useSearchParams, Link } from "react-router";
+import {
+  useLoaderData,
+  useFetcher,
+  useSearchParams,
+  Link,
+} from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
 import { authenticate } from "../shopify.server";
@@ -13,117 +18,137 @@ export const loader = async ({ request }) => {
   const after = url.searchParams.get("after");
   const before = url.searchParams.get("before");
 
-  // Decide whether we are going forward (first/after) or backward (last/before)
-  const goingBackward = Boolean(before);
+  const PAGE_SIZE = 20; // Number of customers per page
+  const goingBackward = !!before;
 
-  const response = await admin.graphql(
-    `#graphql
-      query CustomersWithWarrantyMetaobjects(
-        $query: String!
-        $first: Int
-        $last: Int
-        $after: String
-        $before: String
-        $warrantiesFirst: Int!
-      ) {
-        customers(
-          first: $first
-          last: $last
-          after: $after
-          before: $before
-          query: $query
-          sortKey: CREATED_AT
-          reverse: true
+  let response;
+  try {
+    response = await admin.graphql(
+      `#graphql
+        query CustomersWithWarrantyMetaobjects(
+          $query: String!
+          $first: Int
+          $last: Int
+          $after: String
+          $before: String
+          $warrantiesFirst: Int!
         ) {
-          edges {
-            cursor
-            node {
-              id
-              displayName
-              defaultEmailAddress { emailAddress }
-              defaultPhoneNumber { phoneNumber }
-              tags
-              metafield(namespace: "custom", key: "warranty_activation_details") {
+          customers(
+            first: $first
+            last: $last
+            after: $after
+            before: $before
+            query: $query
+            sortKey: CREATED_AT
+            reverse: true
+          ) {
+            edges {
+              cursor
+              node {
                 id
-                type
-                references(first: $warrantiesFirst) {
-                  nodes {
-                    ... on Metaobject {
-                      id
-                      productName: field(key: "product_name") { value }
-                      customerEmail: field(key: "customer_email") { value }
-                      purchaseSource: field(key: "product_purchase_source") { value }
-                      purchaseDate: field(key: "product_purchase_date") { value }
-                      orderInvoiceNumber: field(key: "product_order_invoice_number") { value }
-                      serialNumber: field(key: "product_serial_number") { value }
-                      startDate: field(key: "start_date") { value }
-                      endDate: field(key: "end_date") { value }
-                      status: field(key: "status") { value }
+                displayName
+                defaultEmailAddress { emailAddress }
+                defaultPhoneNumber { phoneNumber }
+                tags
+                metafield(namespace: "custom", key: "warranty_activation_details") {
+                  id
+                  type
+                  references(first: $warrantiesFirst) {
+                    nodes {
+                      ... on Metaobject {
+                        id
+                        productName: field(key: "product_name") { value }
+                        customerEmail: field(key: "customer_email") { value }
+                        purchaseSource: field(key: "product_purchase_source") { value }
+                        purchaseDate: field(key: "product_purchase_date") { value }
+                        orderInvoiceNumber: field(key: "product_order_invoice_number") { value }
+                        serialNumber: field(key: "product_serial_number") { value }
+                        startDate: field(key: "start_date") { value }
+                        endDate: field(key: "end_date") { value }
+                        status: field(key: "status") { value }
+                      }
                     }
                   }
                 }
               }
             }
-          }
-          pageInfo {
-            hasNextPage
-            hasPreviousPage
-            endCursor
-            startCursor
+            pageInfo {
+              hasNextPage
+              hasPreviousPage
+              endCursor
+              startCursor
+            }
           }
         }
-      }
-    `,
-    {
-      variables: {
-        // Metafield filter: only customers where warranty_activation_details has a value
-        query: "metafields.custom.warranty_activation_details:*",
-        first: goingBackward ? null : 50, // going forward or first page
-        last: goingBackward ? 50 : null,  // going backward
-        after: goingBackward ? null : after,
-        before: goingBackward ? before : null,
-        warrantiesFirst: 20,              // warranties per customer
+      `,
+      {
+        variables: {
+          // Customers must have warranty_activation_details metafield set
+          query: "metafields.custom.warranty_activation_details:*",
+          first: goingBackward ? null : PAGE_SIZE,
+          last: goingBackward ? PAGE_SIZE : null,
+          after: goingBackward ? null : after,
+          before: goingBackward ? before : null,
+          warrantiesFirst: 20, // warranties per customer
+        },
       },
-    },
-  );
+    );
+  } catch (error) {
+    // Handle "Invalid cursor for current pagination sort" gracefully
+    const isInvalidCursorError =
+      error?.response?.body?.errors?.graphQLErrors?.some((gqlError) =>
+        gqlError?.message?.includes("Invalid cursor for current pagination sort."),
+      );
+
+    if (isInvalidCursorError) {
+      const cleanUrl = new URL(request.url);
+      cleanUrl.searchParams.delete("after");
+      cleanUrl.searchParams.delete("before");
+      throw new Response(null, {
+        status: 302,
+        headers: { Location: cleanUrl.pathname + cleanUrl.search },
+      });
+    }
+
+    // For any other error, let the route boundary handle it
+    throw error;
+  }
 
   const json = await response.json();
 
   const customerConnection = json?.data?.customers;
   const edges = customerConnection?.edges ?? [];
 
-  // Map and filter: keep only customers with at least one warranty
-  let customers = edges
-    .map(({ node }) => {
-      const metafield = node.metafield;
-      const warrantyNodes = metafield?.references?.nodes?.filter(Boolean) ?? [];
+  // Map customers and warranties
+  let customers = edges.map(({ node }) => {
+    const metafield = node.metafield;
+    const warrantyNodes = metafield?.references?.nodes?.filter(Boolean) ?? [];
 
-      const warranties = warrantyNodes.map((mo) => ({
-        id: mo.id,
-        productName: mo.productName?.value || "",
-        customerEmail: mo.customerEmail?.value || "",
-        purchaseSource: mo.purchaseSource?.value || "",
-        purchaseDate: mo.purchaseDate?.value || "",
-        orderInvoiceNumber: mo.orderInvoiceNumber?.value || "",
-        serialNumber: mo.serialNumber?.value || "",
-        startDate: mo.startDate?.value || "",
-        endDate: mo.endDate?.value || "",
-        status: mo.status?.value || "",
-      }));
+    const warranties = warrantyNodes.map((mo) => ({
+      id: mo.id,
+      productName: mo.productName?.value || "",
+      customerEmail: mo.customerEmail?.value || "",
+      purchaseSource: mo.purchaseSource?.value || "",
+      purchaseDate: mo.purchaseDate?.value || "",
+      orderInvoiceNumber: mo.orderInvoiceNumber?.value || "",
+      serialNumber: mo.serialNumber?.value || "",
+      startDate: mo.startDate?.value || "",
+      endDate: mo.endDate?.value || "",
+      status: mo.status?.value || "",
+    }));
 
-      return {
-        id: node.id,
-        displayName: node.displayName,
-        email: node.defaultEmailAddress?.emailAddress || "",
-        phone: node.defaultPhoneNumber?.phoneNumber || "",
-        tags: node.tags || [],
-        warranties,
-      };
-    })
-    .filter((customer) => customer.warranties.length > 0);
+    return {
+      id: node.id,
+      displayName: node.displayName,
+      email: node.defaultEmailAddress?.emailAddress || "",
+      phone: node.defaultPhoneNumber?.phoneNumber || "",
+      tags: node.tags || [],
+      warranties,
+    };
+  });
 
-  // Limit page size in our app to 10 customers with warranties
-  customers = customers.slice(0, 10);
+  // Safety: drop any customers that somehow have 0 warranties
+  customers = customers.filter((c) => c.warranties.length > 0);
 
   const pageInfo = customerConnection?.pageInfo ?? {
     hasNextPage: false,
@@ -135,6 +160,7 @@ export const loader = async ({ request }) => {
   return {
     customers,
     pageInfo,
+    pageSize: PAGE_SIZE,
   };
 };
 
