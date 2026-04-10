@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useLoaderData, useFetcher, useSearchParams } from "react-router";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import { boundary } from "@shopify/shopify-app-react-router/server";
@@ -311,14 +311,10 @@ function Pagination({ currentPage, hasNextPage, hasPreviousPage, onPageChange })
 }
 
 export default function WarrantyListingPage() {
-  const { customers, pageInfo, currentPage, totalPages, totalCustomers } = useLoaderData();
+  const { customers, pageInfo, currentPage } = useLoaderData();
   const shopify = useAppBridge();
   const fetcher = useFetcher();
   const [searchParams, setSearchParams] = useSearchParams();
-
-  const isSubmitting =
-    ["loading", "submitting"].includes(fetcher.state) &&
-    fetcher.formMethod === "POST";
 
   useEffect(() => {
     if (fetcher.data && fetcher.state === "idle") {
@@ -357,21 +353,6 @@ export default function WarrantyListingPage() {
     }
 
     setSearchParams(newSearchParams);
-  };
-
-  // Helper to auto-submit form when any field changes
-  const handleAutoSubmit = (event, warranty, customer) => {
-    const form = event.currentTarget?.form;
-    if (!form) return;
-
-    const fd = new FormData(form);
-
-    // Ensure we have the most up-to-date status when status changed
-    if (event.currentTarget.name === "status") {
-      fd.set("status", event.currentTarget.value);
-    }
-
-    fetcher.submit(fd, { method: "post" });
   };
 
   return (
@@ -434,6 +415,16 @@ export default function WarrantyListingPage() {
                           ? warranty.status
                           : "Pending";
 
+                        // formRef for this warranty's form
+                        const formRef = useRef(null);
+
+                        // Handler that uses the formRef instead of event.currentTarget.form
+                        const handleAutoSubmit = () => {
+                          if (!formRef.current) return;
+                          const fd = new FormData(formRef.current);
+                          fetcher.submit(fd, { method: "post" });
+                        };
+
                         return (
                           <s-box
                             key={warranty.id}
@@ -471,7 +462,7 @@ export default function WarrantyListingPage() {
                             </s-stack>
 
                             {/* Auto-submit form: update metaobject + send email */}
-                            <fetcher.Form method="post">
+                            <fetcher.Form method="post" ref={formRef}>
                               <input
                                 type="hidden"
                                 name="_intent"
@@ -526,24 +517,18 @@ export default function WarrantyListingPage() {
                                   name="startDate"
                                   label="Start date"
                                   defaultValue={warranty.startDate || ""}
-                                  onChange={(event) =>
-                                    handleAutoSubmit(event, warranty, customer)
-                                  }
+                                  onChange={handleAutoSubmit}
                                 />
                                 <s-date-field
                                   name="endDate"
                                   label="End date"
                                   defaultValue={warranty.endDate || ""}
-                                  onChange={(event) =>
-                                    handleAutoSubmit(event, warranty, customer)
-                                  }
+                                  onChange={handleAutoSubmit}
                                 />
                                 <s-select
                                   name="status"
                                   label="Status"
-                                  onChange={(event) =>
-                                    handleAutoSubmit(event, warranty, customer)
-                                  }
+                                  onChange={handleAutoSubmit}
                                 >
                                   <s-option
                                     value="Pending"
