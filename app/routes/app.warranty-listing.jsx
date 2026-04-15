@@ -274,54 +274,25 @@ export const action = async ({ request }) => {
   }
 };
 
-// Pagination component
+// Pagination component using Polaris
 function Pagination({ currentPage, hasNextPage, hasPreviousPage, onPageChange }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        gap: "8px",
-        marginTop: "24px",
-        padding: "16px",
-      }}
-    >
-      <button
-        type="button"
+    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: "8px", marginTop: "24px" }}>
+      <s-button
         onClick={() => onPageChange(currentPage - 1, "prev")}
         disabled={currentPage <= 1 || !hasPreviousPage}
-        style={{
-          padding: "8px 16px",
-          backgroundColor: "#007bff",
-          color: "white",
-          border: "none",
-          borderRadius: "4px",
-          cursor: "pointer",
-        }}
       >
         Previous
-      </button>
-
-      <span style={{ margin: "0 16px" }}>
-        Page {currentPage}
-      </span>
-
-      <button
-        type="button"
+      </s-button>
+      
+      <s-text variant="bodyMd">Page {currentPage}</s-text>
+      
+      <s-button
         onClick={() => onPageChange(currentPage + 1, "next")}
         disabled={!hasNextPage}
-        style={{
-          padding: "8px 16px",
-          backgroundColor: "#007bff",
-          color: "white",
-          border: "none",
-          borderRadius: "4px",
-          cursor: "pointer",
-        }}
       >
         Next
-      </button>
+      </s-button>
     </div>
   );
 }
@@ -342,38 +313,35 @@ function WarrantyItem({ warranty, customer, fetcher }) {
   };
 
   return (
-    <div
-      style={{
-        padding: "16px",
-        border: "1px solid #ddd",
-        borderRadius: "8px",
-        marginTop: "12px",
-        backgroundColor: "#fff",
-      }}
-    >
-      <h3 style={{ margin: "0 0 12px 0" }}>
+    <s-card sectioned>
+      <s-text variant="headingMd" as="h3">
         {warranty.productName || "Warranty record"}
-      </h3>
+      </s-text>
+      
+      <s-stack vertical spacing="loose">
+        <s-text>
+          <s-text variant="bodyStrong">Customer email:</s-text>{" "}
+          {warranty.customerEmail || customer.email || "—"}
+        </s-text>
+        <s-text>
+          <s-text variant="bodyStrong">Purchase source:</s-text>{" "}
+          {warranty.purchaseSource || "—"}
+        </s-text>
+        <s-text>
+          <s-text variant="bodyStrong">Purchase date:</s-text>{" "}
+          {warranty.purchaseDate || "—"}
+        </s-text>
+        <s-text>
+          <s-text variant="bodyStrong">Order / Invoice #:</s-text>{" "}
+          {warranty.orderInvoiceNumber || "—"}
+        </s-text>
+        <s-text>
+          <s-text variant="bodyStrong">Serial number:</s-text>{" "}
+          {warranty.serialNumber || "—"}
+        </s-text>
+      </s-stack>
 
-      <div style={{ marginBottom: "12px" }}>
-        <p style={{ margin: "4px 0" }}>
-          <strong>Customer email:</strong> {warranty.customerEmail || customer.email || "—"}
-        </p>
-        <p style={{ margin: "4px 0" }}>
-          <strong>Purchase source:</strong> {warranty.purchaseSource || "—"}
-        </p>
-        <p style={{ margin: "4px 0" }}>
-          <strong>Purchase date:</strong> {warranty.purchaseDate || "—"}
-        </p>
-        <p style={{ margin: "4px 0" }}>
-          <strong>Order / Invoice #:</strong> {warranty.orderInvoiceNumber || "—"}
-        </p>
-        <p style={{ margin: "4px 0" }}>
-          <strong>Serial number:</strong> {warranty.serialNumber || "—"}
-        </p>
-      </div>
-
-      <form method="post" ref={formRef}>
+      <fetcher.Form method="post" ref={formRef}>
         <input type="hidden" name="_intent" value="saveWarranty" />
         <input type="hidden" name="metaobjectId" value={warranty.id} />
         <input type="hidden" name="customerEmail" value={warranty.customerEmail || customer.email || ""} />
@@ -384,143 +352,103 @@ function WarrantyItem({ warranty, customer, fetcher }) {
         <input type="hidden" name="purchaseDate" value={warranty.purchaseDate || ""} />
         <input type="hidden" name="purchaseSource" value={warranty.purchaseSource || ""} />
 
-        <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-          <div style={{ flex: 1 }}>
-            <label style={{ display: "block", marginBottom: "4px", fontWeight: "bold" }}>
-              Start date:
-            </label>
-            <input
-              type="date"
-              name="startDate"
-              defaultValue={warranty.startDate || ""}
-              onChange={handleAutoSubmit}
-              style={{
-                width: "100%",
-                padding: "8px",
-                border: "1px solid #ccc",
-                borderRadius: "4px",
-              }}
-            />
-          </div>
-
-          <div style={{ flex: 1 }}>
-            <label style={{ display: "block", marginBottom: "4px", fontWeight: "bold" }}>
-              End date:
-            </label>
-            <input
-              type="date"
-              name="endDate"
-              defaultValue={warranty.endDate || ""}
-              onChange={handleAutoSubmit}
-              style={{
-                width: "100%",
-                padding: "8px",
-                border: "1px solid #ccc",
-                borderRadius: "4px",
-              }}
-            />
-          </div>
-
-          <div style={{ flex: 1 }}>
-            <label style={{ display: "block", marginBottom: "4px", fontWeight: "bold" }}>
-              Status:
-            </label>
-            <select
-              name="status"
-              defaultValue={normalizedStatus}
-              onChange={handleAutoSubmit}
-              style={{
-                width: "100%",
-                padding: "8px",
-                border: "1px solid #ccc",
-                borderRadius: "4px",
-              }}
-            >
-              <option value="Pending">Pending</option>
-              <option value="Approved">Approved</option>
-              <option value="Rejected">Rejected</option>
-              <option value="In Process">In Process</option>
-            </select>
-          </div>
-        </div>
+        <s-stack distribution="fill" spacing="loose">
+          <s-date-picker
+            month={new Date().getMonth()}
+            year={new Date().getFullYear()}
+            onChange={(value) => {
+              // Handle date change for start date
+              const input = document.createElement('input');
+              input.name = 'startDate';
+              input.value = value.toISOString().split('T')[0];
+              formRef.current.appendChild(input);
+              handleAutoSubmit();
+            }}
+          />
+          
+          <s-text-field
+            label="Start date"
+            name="startDate"
+            type="date"
+            defaultValue={warranty.startDate || ""}
+            onChange={handleAutoSubmit}
+            autoComplete="off"
+          />
+          
+          <s-text-field
+            label="End date"
+            name="endDate"
+            type="date"
+            defaultValue={warranty.endDate || ""}
+            onChange={handleAutoSubmit}
+            autoComplete="off"
+          />
+          
+          <s-select
+            label="Status"
+            name="status"
+            options={[
+              { label: "Pending", value: "Pending" },
+              { label: "Approved", value: "Approved" },
+              { label: "Rejected", value: "Rejected" },
+              { label: "In Process", value: "In Process" },
+            ]}
+            value={normalizedStatus}
+            onChange={handleAutoSubmit}
+          />
+        </s-stack>
 
         {fetcher.data && !fetcher.data.ok && (
-          <div style={{ color: "red", marginTop: "12px" }}>
-            {fetcher.data.error || "Action failed."}
-          </div>
+          <s-banner status="critical">
+            <s-text>{fetcher.data.error || "Action failed."}</s-text>
+          </s-banner>
         )}
-      </form>
-    </div>
+      </fetcher.Form>
+    </s-card>
   );
 }
 
 // Customer Card Component
 function CustomerCard({ customer, fetcher }) {
   return (
-    <div
-      style={{
-        padding: "16px",
-        border: "1px solid #ddd",
-        borderRadius: "8px",
-        marginBottom: "16px",
-        backgroundColor: "#f5f5f5",
-      }}
-    >
-      <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap", marginBottom: "16px" }}>
-        <strong style={{ fontSize: "16px" }}>
-          {customer.displayName || "Unnamed customer"}
-        </strong>
-        <span style={{
-          padding: "4px 8px",
-          backgroundColor: "#e3f2fd",
-          borderRadius: "4px",
-          fontSize: "12px",
-        }}>
-          {customer.email || "No email"}
-        </span>
-        <span style={{
-          padding: "4px 8px",
-          backgroundColor: "#e3f2fd",
-          borderRadius: "4px",
-          fontSize: "12px",
-        }}>
-          {customer.phone || "No phone"}
-        </span>
-        <button
-          onClick={() => {
-            // Open customer in Shopify admin
-            window.open(`https://admin.shopify.com/customers/${customer.id.split('/').pop()}`, '_blank');
-          }}
-          style={{
-            padding: "6px 12px",
-            backgroundColor: "#6c757d",
-            color: "white",
-            border: "none",
-            borderRadius: "4px",
-            cursor: "pointer",
-          }}
-        >
-          View customer
-        </button>
-      </div>
+    <s-card>
+      <s-card-section>
+        <s-stack alignment="center" spacing="loose">
+          <s-text variant="headingMd" as="h2">
+            {customer.displayName || "Unnamed customer"}
+          </s-text>
+          <s-badge status="info">{customer.email || "No email"}</s-badge>
+          <s-badge status="info">{customer.phone || "No phone"}</s-badge>
+          <s-button
+            onClick={() => {
+              const customerId = customer.id.split('/').pop();
+              window.open(`https://admin.shopify.com/customers/${customerId}`, '_blank');
+            }}
+          >
+            View customer
+          </s-button>
+        </s-stack>
+      </s-card-section>
 
       {customer.warranties.length === 0 ? (
-        <p style={{ color: "#666", margin: 0 }}>
-          This customer has no warranty activation records linked.
-        </p>
+        <s-card-section>
+          <s-text>This customer has no warranty activation records linked.</s-text>
+        </s-card-section>
       ) : (
-        <div>
-          {customer.warranties.map((warranty) => (
-            <WarrantyItem
-              key={warranty.id}
-              warranty={warranty}
-              customer={customer}
-              fetcher={fetcher}
-            />
-          ))}
-        </div>
+        <s-card-section>
+          <s-stack vertical spacing="loose">
+            {customer.warranties.map((warranty) => (
+              <WarrantyItem
+                key={warranty.id}
+                warranty={warranty}
+                customer={customer}
+                fetcher={fetcher}
+              />
+            ))}
+          </s-stack>
+        </s-card-section>
       )}
-    </div>
+    </s-card>
   );
 }
 
@@ -571,42 +499,66 @@ export default function WarrantyListingPage() {
   };
 
   return (
-    <div style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
-      <h1 style={{ marginBottom: "24px" }}>Warranty Registrations</h1>
-      
-      <div>
-        <h2 style={{ marginBottom: "16px", fontSize: "18px" }}>Customers</h2>
-        
-        {customers.length === 0 ? (
-          <p>
-            No customers found with the <strong>warrantyregistered</strong> tag.
-          </p>
-        ) : (
-          <>
-            <p style={{ marginBottom: "16px", color: "#666" }}>
-              Showing page {currentPage}
-            </p>
+    <s-page>
+      <s-layout>
+        <s-layout-section>
+          <s-card>
+            <s-card-section>
+              <s-text variant="headingLg" as="h1">
+                Warranty Registrations
+              </s-text>
+            </s-card-section>
+          </s-card>
 
-            <div>
-              {customers.map((customer) => (
-                <CustomerCard
-                  key={customer.id}
-                  customer={customer}
-                  fetcher={fetcher}
-                />
-              ))}
-            </div>
+          <s-card>
+            <s-card-section>
+              <s-text variant="headingMd" as="h2">
+                Customers
+              </s-text>
+            </s-card-section>
 
-            <Pagination
-              currentPage={currentPage}
-              hasNextPage={pageInfo.hasNextPage}
-              hasPreviousPage={pageInfo.hasPreviousPage}
-              onPageChange={handlePageChange}
-            />
-          </>
-        )}
-      </div>
-    </div>
+            {customers.length === 0 ? (
+              <s-card-section>
+                <s-banner status="info">
+                  <s-text>
+                    No customers found with the <s-text variant="bodyStrong">warrantyregistered</s-text> tag.
+                  </s-text>
+                </s-banner>
+              </s-card-section>
+            ) : (
+              <>
+                <s-card-section>
+                  <s-text variant="bodyMd" tone="subdued">
+                    Showing page {currentPage} of {Math.ceil(customers.length / 10)}
+                  </s-text>
+                </s-card-section>
+
+                <s-card-section>
+                  <s-stack vertical spacing="loose">
+                    {customers.map((customer) => (
+                      <CustomerCard
+                        key={customer.id}
+                        customer={customer}
+                        fetcher={fetcher}
+                      />
+                    ))}
+                  </s-stack>
+                </s-card-section>
+
+                <s-card-section>
+                  <Pagination
+                    currentPage={currentPage}
+                    hasNextPage={pageInfo.hasNextPage}
+                    hasPreviousPage={pageInfo.hasPreviousPage}
+                    onPageChange={handlePageChange}
+                  />
+                </s-card-section>
+              </>
+            )}
+          </s-card>
+        </s-layout-section>
+      </s-layout>
+    </s-page>
   );
 }
 
