@@ -1294,11 +1294,11 @@ export default function WarrantyPage() {
             {fieldErrors.product_id && touched.product_id && (
               <p className="field-error-message">{fieldErrors.product_id}</p>
             )}
-            {productsError && (
+            {/* {productsError && (
               <p className="warranty-status warranty-status--error">
                 {productsError}
               </p>
-            )}
+            )} */}
           </div>
 
           <div className="warranty-field">
