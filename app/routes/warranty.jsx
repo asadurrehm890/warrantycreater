@@ -1235,7 +1235,7 @@ export default function WarrantyPage() {
                 productsLoading
                   ? "Loading products..."
                   : productsError
-                  ? "Failed to load products"
+                  ? "Product Name"
                   : "Type to search products..."
               }
               value={productSearchTerm}
@@ -1251,7 +1251,7 @@ export default function WarrantyPage() {
                   setShowProductDropdown(true);
                 }
               }}
-              disabled={productsLoading || !!productsError}
+              
               autoComplete="off"
             />
 
