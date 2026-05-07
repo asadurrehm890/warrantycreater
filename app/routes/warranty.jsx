@@ -1251,7 +1251,6 @@ export default function WarrantyPage() {
                   setShowProductDropdown(true);
                 }
               }}
-              
               autoComplete="off"
             />
 
