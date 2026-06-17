@@ -178,8 +178,8 @@ export default function WarrantyPage() {
         break;
         
       case "product_id":
-        if (!value || value === "") {
-          error = "Please select a product";
+        if (!value || value.trim() === "") {
+          error = "Product name is required";
         }
         break;
         
@@ -210,11 +210,11 @@ export default function WarrantyPage() {
     
     // Validate each required field
     const fieldsToValidate = [
-      "full_name", "phone", "street", "town", "country", 
-      "postal_code", "purchase_source", "purchase_date", 
-      "order_number", "product_id", "serial_number"
+      "full_name", "phone", "street", "town", "country",
+      "postal_code", "purchase_source", "purchase_date",
+      "order_number", "serial_number"
     ];
-    
+
     fieldsToValidate.forEach(field => {
       const value = formData.get(field) || addressFields[field] || "";
       const error = validateField(field, value, formData);
@@ -223,7 +223,15 @@ export default function WarrantyPage() {
         isValid = false;
       }
     });
-    
+
+    // Product: accept any typed product name (free text). The user does not
+    // have to pick from the dropdown.
+    const productName = (formData.get("product_title") || productSearchTerm || "").trim();
+    if (!productName) {
+      newErrors.product_id = "Product name is required";
+      isValid = false;
+    }
+
     setFieldErrors(prev => ({ ...prev, ...newErrors }));
     return isValid;
   };
@@ -779,10 +787,16 @@ export default function WarrantyPage() {
     formData.set("country", addressFields.country);
     formData.set("postal_code", addressFields.postal_code);
 
+    // Product name is free text: use the selected product's title if one was
+    // picked from the dropdown, otherwise use whatever the user typed.
     const selectedProduct = products.find((p) => p.id === selectedProductId);
-    if (selectedProduct) {
-      formData.set("product_title", selectedProduct.title);
-    }
+    const productName = selectedProduct
+      ? selectedProduct.title
+      : productSearchTerm.trim();
+    formData.set("product_title", productName);
+    // Keep product_id satisfied for the backend's required check: use the real
+    // product id when selected, otherwise fall back to the typed name.
+    formData.set("product_id", selectedProductId || productName);
 
     // Validate all fields
     if (!validateAllFields(formData)) {
@@ -1251,15 +1265,25 @@ export default function WarrantyPage() {
                   setShowProductDropdown(true);
                 }
               }}
+              onBlur={(e) => {
+                // Typing a free-text product name is acceptable; just require
+                // that something was entered.
+                setTouched((prev) => ({ ...prev, product_id: true }));
+                setFieldErrors((prev) => ({
+                  ...prev,
+                  product_id: validateField("product_id", e.target.value),
+                }));
+              }}
               autoComplete="off"
             />
 
-            {/* Hidden input that actually submits product_id */}
+            {/* Hidden input mirrors the selected product id (if any). The
+                actual submitted product_id is set in handleSubmit and falls
+                back to the typed product name when nothing is selected. */}
             <input
               type="hidden"
               name="product_id"
               value={selectedProductId}
-              required
             />
 
             {/* Dropdown of matching products */}
